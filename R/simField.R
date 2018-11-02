@@ -15,10 +15,10 @@
 #' @param link link function to apply to the linear combination
 #' @param ... other parameters to pass to mesh
 #'
-#' @return list, list contains 3 items. Spatial points data frame with raster 
+#' @return field object, contains 4 items. Spatial points data frame with raster
 #' values for transformed linear combination, and beta value. A mesh that was 
-#' used to create the latent field and possibly covariates. The latent field 
-#' itself.
+#' used to create the latent field and possibly covariates. The latent field
+#' itself. A bounding shape where all observations take place.
 #'
 #' @examples
 #' require(tidyr)
@@ -70,8 +70,8 @@
 #'
 #' @export
 
-simField <- function(N=60, sigmaE=1, rangeE=.3,
-                     shape=NULL, beta0=0, betaList=list(), link=identity, ...){
+simField <- function(N=60, sigmaE=1, rangeE=.3, shape=NULL, 
+                     beta0=0, betaList=list(), link=arm::invlogit, ...){
     if(is.null(shape)){
         shape <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(
             matrix(c(0,1,1,0,0,0,1,1), ncol=2))), 1)))
@@ -90,9 +90,7 @@ simField <- function(N=60, sigmaE=1, rangeE=.3,
     
     validIndex <- !is.na(sp::over(shapeExtPointsDF, shape)$isPresent)
     shapePointsDF <- shapeExtPointsDF[validIndex,]
-    mesh <- INLA::inla.mesh.2d(
-        loc=bbCoords(shape),
-        ...)
+    mesh <- INLA::inla.mesh.2d(loc=bbCoords(shape), ...)
     AprojField <- INLA::inla.spde.make.A(mesh=mesh, loc=shapePointsDF)
     
     kappaE <- sqrt(8) / rangeE
@@ -135,5 +133,16 @@ simField <- function(N=60, sigmaE=1, rangeE=.3,
                 shapePointsDF$z)
     }
     
-    list(spdf=shapePointsDF, mesh=mesh, latent=x)
+    shapePointsDF$id <- 1:nrow(shapePointsDF@data)
+    
+    shapePointsDF$Bound <- 1
+    boundShape <- rgeos::gUnaryUnion(shape, id=shape@data$Bound)
+    boundShape <- sp::SpatialPolygonsDataFrame(boundShape,
+            data.frame(
+                Bound=1,
+                row.names="1"))
+    
+    field <- list(spdf=shapePointsDF, mesh=mesh, latent=x, bound=boundShape)
+    class(field) <- "field"
+    field
 }

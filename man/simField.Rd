@@ -5,7 +5,7 @@
 \title{Simulate A continous 2D spatial field using SPDE}
 \usage{
 simField(N = 60, sigmaE = 1, rangeE = 0.3, shape = NULL, beta0 = 0,
-  betaList = list(), link = identity, ...)
+  betaList = list(), link = arm::invlogit, ...)
 }
 \arguments{
 \item{N}{Number of width pixels for the projection}
@@ -26,10 +26,10 @@ cluster, or spatial and a value item which is the beta coefficient.}
 \item{...}{other parameters to pass to mesh}
 }
 \value{
-list, list contains 3 items. Spatial points data frame with raster 
+field object, contains 4 items. Spatial points data frame with raster
 values for transformed linear combination, and beta value. A mesh that was 
-used to create the latent field and possibly covariates. The latent field 
-itself.
+used to create the latent field and possibly covariates. The latent field
+itself. A bounding shape where all observations take place.
 }
 \description{
 Calculates a continous underlying spatial field for a given

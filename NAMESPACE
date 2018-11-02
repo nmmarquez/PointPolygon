@@ -2,4 +2,6 @@
 
 export(bbCoords)
 export(hRatio)
+export(samplePoints)
+export(samplePolygons)
 export(simField)

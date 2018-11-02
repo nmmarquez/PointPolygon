@@ -13,7 +13,9 @@ Imports:
     raster,
     rgdal,
     sp,
-    dplyr
+    rgeos,
+    dplyr,
+    arm
 Suggests:
     leaflet,
     tidyr,
