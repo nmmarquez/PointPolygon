@@ -21,6 +21,7 @@ Takes a field object and divides it into rWidth square sections.
 }
 \examples{
 require(sp)
+require(ar.matrix)
 
 set.seed(123)
 usSim <- simField(

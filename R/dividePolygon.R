@@ -11,6 +11,7 @@
 #' 
 #' @examples 
 #' require(sp)
+#' require(ar.matrix)
 #' 
 #' set.seed(123)
 #' usSim <- simField(
