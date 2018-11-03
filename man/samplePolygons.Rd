@@ -32,7 +32,6 @@ a given polygon and is representative of that polygon.
 }
 \examples{
 require(sp)
-require(PointPolygon)
 
 set.seed(123)
 unitSim <- simField(

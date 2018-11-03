@@ -18,7 +18,6 @@
 #' 
 #' @examples 
 #' require(sp)
-#' require(PointPolygon)
 #' 
 #' set.seed(123)
 #' unitSim <- simField(
@@ -38,13 +37,7 @@
 
 samplePolygons <- function(field, M, p=1., polygonList=NULL, rWidth=NULL, ...){
     if(is.null(polygonList)){
-        bb <- field$bound@bbox
-        baseRaster <- raster::raster(
-            ncols=rWidth, nrows=round(rWidth*hRatio(field$bound)), 
-            xmn=bb[1,1], xmx=bb[1,2], ymn=bb[2,1], ymx=bb[2,2], 
-            crs=field$bound@proj4string)
-        shapeRaster <- raster::rasterize(field$bound, baseRaster, field=1)
-        sectionedSPDF <- raster::rasterToPolygons(shapeRaster)
+        sectionedSPDF <- dividePolygon(field$bound, rWidth)
         polygonList <- lapply(1:nrow(sectionedSPDF@data), function(i){
             sectionedSPDF[i,]
         })

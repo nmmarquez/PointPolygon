@@ -125,7 +125,7 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, shape=NULL,
     }
     shapePointsDF$z <- as.numeric(AprojField %*% x)
     if(i == 0){
-        shapePointsDF$theta <- beta0 + shapePointsDF$z
+        shapePointsDF$theta <- link(beta0 + shapePointsDF$z)
     }
     else{
         shapePointsDF$theta <- link(c(
