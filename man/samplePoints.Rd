@@ -26,8 +26,6 @@ Takes binomial trails from a probability field created by
 simField randomly from points on the field.
 }
 \examples{
-require(sp)
-require(PointPolygon)
 
 set.seed(123)
 unitSim <- simField(

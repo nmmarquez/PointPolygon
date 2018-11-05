@@ -12,9 +12,7 @@
 #' @return data.frame with observation number, number of trails, and the id
 #' of the pixel that the trail took place in.
 #' 
-#' @examples 
-#' require(sp)
-#' require(PointPolygon)
+#' @examples
 #' 
 #' set.seed(123)
 #' unitSim <- simField(
