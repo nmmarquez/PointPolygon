@@ -15,7 +15,9 @@ Imports:
     sp,
     rgeos,
     dplyr,
-    arm
+    arm,
+    TMB,
+    Matrix
 Suggests:
     leaflet,
     tidyr,

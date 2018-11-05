@@ -42,7 +42,7 @@ Type objective_function<Type>::operator() ()
     DATA_SPARSE_MATRIX(M2);
 
     // Parameters
-    PARAMETER(beta);
+    PARAMETER_VECTOR(beta);
     PARAMETER(log_tau);
     PARAMETER(log_kappa);
     PARAMETER_VECTOR(z);

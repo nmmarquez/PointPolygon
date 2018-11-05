@@ -23,6 +23,7 @@
 #' approximation.
 #'
 #' @examples
+#' ## Not run:
 #' require(tidyr)
 #' require(gridExtra)
 #' require(ar.matrix)
@@ -69,6 +70,8 @@
 #'     coord_equal() +
 #'     theme_void() +
 #'     scale_fill_distiller(palette = "Spectral")
+#'
+#' ## End(**Not run**)
 #'
 #' @export
 

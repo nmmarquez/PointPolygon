@@ -40,6 +40,7 @@ observed field which is a linear combination of covariates their beta values
 with an optional link function applied.
 }
 \examples{
+## Not run:
 require(tidyr)
 require(gridExtra)
 require(ar.matrix)
@@ -86,5 +87,7 @@ usSim$spdf@data  \%>\%
     coord_equal() +
     theme_void() +
     scale_fill_distiller(palette = "Spectral")
+
+## End(**Not run**)
 
 }

@@ -13,11 +13,11 @@
 buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL){
     if(is.null(polyDF)){
         empty <- vector("integer")
-        polyDF <- data.frame(obs=empty, trails=empty, id=empty)
+        polyDF <- data.frame(obs=empty, trials=empty, id=empty)
     }
     if(is.null(pointDF)){
         empty <- vector("integer")
-        pointDF <- data.frame(obs=empty, trails=empty, id=empty)
+        pointDF <- data.frame(obs=empty, trials=empty, id=empty)
     }
 
     idx <- pointDF$id + 1 # have to add one for r index
@@ -52,7 +52,7 @@ buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL){
             dims = c(nrow(field$spdf@data), nrow(polyDF)))
         Data <- list(
             yPoint=pointDF$obs, denomPoint=pointDF$trails, idPoint=pointDF$id,
-            yPoly=polyDF$ob, denomPoly=polyDF$trails, covs=covs,
+            yPoly=polyDF$obs, denomPoly=polyDF$trials, covs=covs,
             M0=field$spde$param.inla$M0,M1=field$spde$param.inla$M1,
             M2=field$spde$param.inla$M2, AprojObs=field$AprojField,
             AprojPoly=AprojPoly)
@@ -62,7 +62,7 @@ buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL){
         Data <- list(
             yPoint=pointDF$obs, denomPoint=pointDF$trails,
             idPoint=0:(nrow(pointDF) - 1),
-            yPoly=polyDF$ob, denomPoly=polyDF$trails, covs=covs,
+            yPoly=polyDF$obs, denomPoly=polyDF$trials, covs=covs,
             M0=field$spde$param.inla$M0,M1=field$spde$param.inla$M1,
             M2=field$spde$param.inla$M2, AprojObs=field$AprojField[idx,],
             AprojPoly=AprojPoly)
