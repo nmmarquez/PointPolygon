@@ -15,10 +15,12 @@
 #' @param link link function to apply to the linear combination
 #' @param ... other parameters to pass to mesh
 #'
-#' @return field object, contains 4 items. Spatial points data frame with raster
+#' @return field object, contains 6 items. Spatial points data frame with raster
 #' values for transformed linear combination, and beta value. A mesh that was 
 #' used to create the latent field and possibly covariates. The latent field
-#' itself. A bounding shape where all observations take place.
+#' itself. A bounding shape where all observations take place. A projection 
+#' matrix from the mesh to the entire field of interest. The spde for the matern
+#' approximation.
 #'
 #' @examples
 #' require(tidyr)
@@ -56,9 +58,9 @@
 #' usSim <- simField(
 #'     N = 600,
 #'     shape = US.df,
-#'     rangeE = 3,
+#'     rangeE = 1.7,
 #'     offset = c(1, 2),
-#'     max.edge = c(.25, 1))
+#'     max.edge = c(.5, 1))
 #' 
 #' plot(usSim$mesh)
 #' usSim$spdf@data  %>%
@@ -133,7 +135,7 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, shape=NULL,
                 shapePointsDF$z)
     }
     
-    shapePointsDF$id <- 1:nrow(shapePointsDF@data)
+    shapePointsDF$id <- (1:nrow(shapePointsDF@data)) - 1
     
     shapePointsDF$Bound <- 1
     boundShape <- rgeos::gUnaryUnion(shape, id=shape@data$Bound)
@@ -142,7 +144,13 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, shape=NULL,
                 Bound=1,
                 row.names="1"))
     
-    field <- list(spdf=shapePointsDF, mesh=mesh, latent=x, bound=boundShape)
+    field <- list(
+        spdf = shapePointsDF, 
+        mesh = mesh, 
+        latent = x, 
+        bound = boundShape,
+        AprojField = AprojField,
+        spde = spde)
     class(field) <- "field"
     field
 }
