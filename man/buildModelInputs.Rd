@@ -4,7 +4,7 @@
 \alias{buildModelInputs}
 \title{Build model inputs for use with runFieldModel}
 \usage{
-buildModelInputs(field, pointDF = NULL, polyDF = NULL)
+buildModelInputs(field, pointDF = NULL, polyDF = NULL, model = TRUE)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -12,6 +12,8 @@ buildModelInputs(field, pointDF = NULL, polyDF = NULL)
 \item{pointDF}{data simulated from samplePoints}
 
 \item{polyDF}{data simulated from samplePolygns}
+
+\item{model}{logical, build model inputs for modeling rather than prediction}
 }
 \value{
 List of data and parameter objects to be used in TMB model run.

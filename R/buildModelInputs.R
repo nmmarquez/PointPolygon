@@ -5,12 +5,13 @@
 #' @param field field object which simulated underlying data
 #' @param pointDF data simulated from samplePoints
 #' @param polyDF data simulated from samplePolygns
+#' @param model logical, build model inputs for modeling rather than prediction
 #' 
 #' @return List of data and parameter objects to be used in TMB model run.
 #' 
 #' @export
 
-buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL){
+buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL, model=TRUE){
     if(is.null(polyDF)){
         empty <- vector("integer")
         polyDF <- data.frame(obs=empty, trials=empty, id=empty)
@@ -24,7 +25,7 @@ buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL){
     covDF <- dplyr::select(field$spdf@data, dplyr::matches("V[0-9]+"))
 
     if(ncol(covDF) == 1){
-        if(nrow(polyDF) == 0){
+        if((nrow(polyDF) == 0) & model){
             covs <- matrix(covDF[idx,1], nrow=length(idx), ncol=1)
         }
         else{
@@ -32,7 +33,7 @@ buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL){
         }
     }
     else{
-        if(nrow(polyDF) == 0){
+        if((nrow(polyDF) == 0) & model){
             covs <- as.matrix(covDF)[idx,]
         }
         else{
@@ -58,13 +59,19 @@ buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL){
             AprojPoly=AprojPoly)
     }
     else{
-        AprojPoly <- Matrix::Matrix(data=0, nrow = 0, ncol=0, sparse=TRUE)
+        if(model){
+            AprojObs <- field$AprojField[idx,]
+        }
+        else{
+            AprojObs <- field$AprojField
+        }
+        AprojPoly <- Matrix::Matrix(data=0, nrow=0, ncol=0, sparse=TRUE)
         Data <- list(
             yPoint=pointDF$obs, denomPoint=pointDF$trails,
             idPoint=0:(nrow(pointDF) - 1),
             yPoly=polyDF$obs, denomPoly=polyDF$trials, covs=covs,
             M0=field$spde$param.inla$M0,M1=field$spde$param.inla$M1,
-            M2=field$spde$param.inla$M2, AprojObs=field$AprojField[idx,],
+            M2=field$spde$param.inla$M2, AprojObs=AprojObs,
             AprojPoly=AprojPoly)
     }
 
