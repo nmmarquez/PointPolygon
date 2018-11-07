@@ -11,18 +11,18 @@ samplePoints(field, N, M, replace = TRUE, ...)
 
 \item{N}{int 1, Number of points to simulate}
 
-\item{M}{int, Number of trails for each point either 1 or N long}
+\item{M}{int, Number of trials for each point either 1 or N long}
 
 \item{replace}{logical, replace pixel probabilities in sampling?}
 
 \item{...}{further argumnets for compatibility}
 }
 \value{
-data.frame with observation number, number of trails, and the id
+data.frame with observation number, number of trials, and the id
 of the pixel that the trail took place in.
 }
 \description{
-Takes binomial trails from a probability field created by 
+Takes binomial trials from a probability field created by 
 simField randomly from points on the field.
 }
 \examples{

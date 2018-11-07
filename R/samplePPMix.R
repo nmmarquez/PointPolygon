@@ -1,11 +1,13 @@
-#' Take Observations from Polygons within the latent field
+#' Take Observations from Points and Polygons within the latent field
 #'
 #' @description Takes binomial trials from a probability field created by 
-#' simField randomly from the field where each observation takes place within
-#' a given polygon and is representative of that polygon.
+#' simField randomly from the field where each observation takes place at the 
+#' point level and then p% polygons are removed of their point data and
+#' replaced with representative polygon data.
 #' 
 #' @param field field object which simulated underlying data
-#' @param M int, Number of trials for each polygon
+#' @param N int, Number of points sampled
+#' @param M int, Number of trials for each point
 #' @param p numeric >0 & <=1, percentage of polygons sampled
 #' @param polygonList list, list of polygons to sample from
 #' @param rWidth integer, instead of using a polygon list divide the original
@@ -13,8 +15,8 @@
 #' squares along the x axis.
 #' @param ... further argumnets for compatibility 
 #' 
-#' @return data.frame with observation number, number of trials, and the id
-#' of the pixel that the trail took place in.
+#' @return list of data.frames with observation number, number of trials, 
+#' and the id of the pixel that the trail took place in.
 #' 
 #' @examples 
 #' require(sp)
@@ -31,26 +33,35 @@
 #'         list(type="cluster", value=-2)
 #'     ))
 #'
-#' samplePolygons(unitSim, round(1200*100/9), rWidth=3)
+#' mixSample <- samplePPMix(unitSim, 30, 150, .5, rWidth=3)
+#' head(mixSample$pointDF)
+#' head(mixSample$polyDF)
 #' 
 #' @export
 
-samplePolygons <- function(field, M, p=1., polygonList=NULL, rWidth=NULL, ...){
+samplePPMix <- function(
+    field, N, M, p=.5, polygonList=NULL, rWidth=NULL, replace=TRUE, ...){
     if(is.null(polygonList)){
         sectionedSPDF <- dividePolygon(field$bound, rWidth)
         polygonList <- lapply(1:nrow(sectionedSPDF@data), function(i){
             sectionedSPDF[i,]
         })
     }
+
+    DF <- dplyr::sample_n(field$spdf@data, N, replace=replace)
+    DF$trials <- M
+    DF$obs <- stats::rbinom(N, size=DF$trials, prob=DF$theta)
+    DF <- DF[,c("id", "trials", "obs")]
+
     polyN <- length(polygonList)
     polySamples <- sort(sample.int(polyN, round(p*polyN), replace=F))
     sampleN <- length(polySamples)
 
     obsDF <- data.frame(
         id = I(lapply(1:sampleN, function(x) NA)),
-        trials = rep(M, sampleN),
-        obs = NA)
-
+        trials = rep(0, sampleN),
+        obs = 0)
+    
     i <- 0
     for(j in polySamples){
         i <- i + 1
@@ -59,9 +70,15 @@ samplePolygons <- function(field, M, p=1., polygonList=NULL, rWidth=NULL, ...){
         pointsDF <- cbind(sp::over(field$spdf, subSPDF), field$spdf@data)
         pointsDF <- pointsDF[!is.na(pointsDF$isPresent),]
         obsDF$id[[i]] <- list(ids=pointsDF$id)
+        pRemoveDF <- subset(DF, id %in% pointsDF$id)
+        mPolyTotal <- sum(pRemoveDF$trials)
+        obsDF$trials[i] <- mPolyTotal
         obsDF$obs[i] <- sum(stats::rbinom(
-            M, 1, sample(pointsDF$theta, M, replace=T)))
+            mPolyTotal, 1, sample(pointsDF$theta, mPolyTotal, replace=T)))
+        DF <- subset(DF, !(id %in% pointsDF$id))
     }
 
-    obsDF
+    obsDF <- subset(obsDF, trials != 0)
+
+    list(pointDF=DF, polyDF=obsDF)
 }

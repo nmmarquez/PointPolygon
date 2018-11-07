@@ -15,12 +15,12 @@
 #' @param link link function to apply to the linear combination
 #' @param ... other parameters to pass to mesh
 #'
-#' @return field object, contains 6 items. Spatial points data frame with raster
+#' @return field object, contains 7 items. Spatial points data frame with raster
 #' values for transformed linear combination, and beta value. A mesh that was 
 #' used to create the latent field and possibly covariates. The latent field
 #' itself. A bounding shape where all observations take place. A projection 
 #' matrix from the mesh to the entire field of interest. The spde for the matern
-#' approximation.
+#' approximation. The beta coefficients used to produce the underlying field.
 #'
 #' @examples
 #' ## Not run:
@@ -92,12 +92,12 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, shape=NULL,
         sp::coordinates(shapeRaster),
         data=as.data.frame(sp::coordinates(shapeRaster)),
         proj4string = shape@proj4string)
-    
+
     validIndex <- !is.na(sp::over(shapeExtPointsDF, shape)$isPresent)
     shapePointsDF <- shapeExtPointsDF[validIndex,]
     mesh <- INLA::inla.mesh.2d(loc=bbCoords(shape), ...)
     AprojField <- INLA::inla.spde.make.A(mesh=mesh, loc=shapePointsDF)
-    
+
     kappaE <- sqrt(8) / rangeE
     tauE <- 1/(sqrt(4*pi)*kappaE*sigmaE)
     spde <- INLA::inla.spde2.matern(mesh)
@@ -137,23 +137,24 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, shape=NULL,
             as.matrix(shapePointsDF@data[,paste0("V", 0:i)]) %*% betaVec) + 
                 shapePointsDF$z)
     }
-    
+
     shapePointsDF$id <- (1:nrow(shapePointsDF@data)) - 1
-    
+
     shapePointsDF$Bound <- 1
     boundShape <- rgeos::gUnaryUnion(shape, id=shape@data$Bound)
     boundShape <- sp::SpatialPolygonsDataFrame(boundShape,
             data.frame(
                 Bound=1,
                 row.names="1"))
-    
+
     field <- list(
         spdf = shapePointsDF, 
         mesh = mesh, 
         latent = x, 
         bound = boundShape,
         AprojField = AprojField,
-        spde = spde)
+        spde = spde,
+        betas = c(beta0, sapply(betaList, function(b) b$value)))
     class(field) <- "field"
     field
 }

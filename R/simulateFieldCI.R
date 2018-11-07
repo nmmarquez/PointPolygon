@@ -52,6 +52,7 @@ simulateFieldCI <- function(field, modelFit, draws=1000){
         sd = apply(fieldProbs, 1, stats::sd),
         lwr = apply(fieldProbs, 1, stats::quantile, probs=.025),
         upr = apply(fieldProbs, 1, stats::quantile, probs=.975),
-        id = field$spdf$id
+        id = field$spdf$id,
+        trueValue = field$spdf$theta
         )
 }

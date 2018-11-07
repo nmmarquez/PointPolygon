@@ -1,15 +1,15 @@
 #' Take Point Observations from a spatial field.
 #'
-#' @description Takes binomial trails from a probability field created by 
+#' @description Takes binomial trials from a probability field created by 
 #' simField randomly from points on the field.
 #' 
 #' @param field field object which simulated underlying data
 #' @param N int 1, Number of points to simulate
-#' @param M int, Number of trails for each point either 1 or N long 
+#' @param M int, Number of trials for each point either 1 or N long 
 #' @param replace logical, replace pixel probabilities in sampling?
 #' @param ... further argumnets for compatibility 
 #' 
-#' @return data.frame with observation number, number of trails, and the id
+#' @return data.frame with observation number, number of trials, and the id
 #' of the pixel that the trail took place in.
 #' 
 #' @examples
@@ -32,7 +32,7 @@
 
 samplePoints <- function(field, N, M, replace=TRUE, ...){
     DF <- dplyr::sample_n(field$spdf@data, N, replace=replace)
-    DF$trails <- M
-    DF$obs <- stats::rbinom(N, size=DF$trails, prob=DF$theta)
-    DF[,c("id", "trails", "obs")]
+    DF$trials <- M
+    DF$obs <- stats::rbinom(N, size=DF$trials, prob=DF$theta)
+    DF[,c("id", "trials", "obs")]
 }

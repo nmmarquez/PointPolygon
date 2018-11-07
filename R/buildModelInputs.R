@@ -52,7 +52,7 @@ buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL, model=TRUE){
             x = valID$val,
             dims = c(nrow(field$spdf@data), nrow(polyDF)))
         Data <- list(
-            yPoint=pointDF$obs, denomPoint=pointDF$trails, idPoint=pointDF$id,
+            yPoint=pointDF$obs, denomPoint=pointDF$trials, idPoint=pointDF$id,
             yPoly=polyDF$obs, denomPoly=polyDF$trials, covs=covs,
             M0=field$spde$param.inla$M0,M1=field$spde$param.inla$M1,
             M2=field$spde$param.inla$M2, AprojObs=field$AprojField,
@@ -67,7 +67,7 @@ buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL, model=TRUE){
         }
         AprojPoly <- Matrix::Matrix(data=0, nrow=0, ncol=0, sparse=TRUE)
         Data <- list(
-            yPoint=pointDF$obs, denomPoint=pointDF$trails,
+            yPoint=pointDF$obs, denomPoint=pointDF$trials,
             idPoint=0:(nrow(pointDF) - 1),
             yPoly=polyDF$obs, denomPoly=polyDF$trials, covs=covs,
             M0=field$spde$param.inla$M0,M1=field$spde$param.inla$M1,

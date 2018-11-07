@@ -26,12 +26,12 @@ cluster, or spatial and a value item which is the beta coefficient.}
 \item{...}{other parameters to pass to mesh}
 }
 \value{
-field object, contains 6 items. Spatial points data frame with raster
+field object, contains 7 items. Spatial points data frame with raster
 values for transformed linear combination, and beta value. A mesh that was 
 used to create the latent field and possibly covariates. The latent field
 itself. A bounding shape where all observations take place. A projection 
 matrix from the mesh to the entire field of interest. The spde for the matern
-approximation.
+approximation. The beta coefficients used to produce the underlying field.
 }
 \description{
 Calculates a continous underlying spatial field for a given
