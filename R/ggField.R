@@ -19,7 +19,9 @@
 #' @export
 
 ggField <- function(field, plotVar="theta"){
-    ggplot2::ggplot(field$spdf@data, aes_string("x", "y", fill=plotVar)) +
+    ggplot2::ggplot(
+        field$spdf@data, 
+        ggplot2::aes_string("x", "y", fill=plotVar)) +
         ggplot2::geom_raster() +
         ggplot2::coord_equal() +
         ggplot2::theme_void() +

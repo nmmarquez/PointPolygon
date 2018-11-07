@@ -4,3 +4,4 @@ A package for code to simulating and estimating latent spatial probability field
 
 ![Data](https://i.imgur.com/NNSVMS9.png)
 
+![Est](https://i.imgur.com/nBJcrNO.png)
