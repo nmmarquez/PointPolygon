@@ -1,0 +1,30 @@
+---
+title: "Estimating Points and Polygons"
+output: html_document
+---
+
+```{r load, warning=FALSE, message=FALSE, echo=FALSE}
+```
+
+## The Estimation Process
+This vizualization is a layout of the results from series of simulations that closely resembles the simulation scenario described in Utazi et al 2018. A spatial probability field is simulated on a 1x1 grid using logit link from a linear model with a single covariate and a spatial GMRF as described in Lindgren et al 2011. The simulation model is thus 
+
+$$
+i,j \in \{1, \dots, n\}\\
+Y_i \sim \text{Binomial}(N_i, p_i) \\
+\text{logit}(p_i) = \beta_0 + X_i \beta_1 + \eta(s_i)  \\
+\boldsymbol{\eta} \sim \text{MVN}(\boldsymbol{0}, \boldsymbol{\Sigma}) \\
+\Sigma_{ij} = \frac{\sigma^2_\eta}{2^{\nu-1} \Gamma(\nu)}
+    (\kappa ||s_i - s_j||)^\nu K_\nu(\kappa ||s_i - s_j||) \\
+\Sigma_{ij} = \text{Cov}(\eta(s_i) , \eta(s_j))
+$$
+
+The covariate used in the model has three different structures either being completely at random across the field, spatialy autocorrelated with the same parameters as the latent field, or clustered together. $B_0$ is set to $-2$ for all simulations while $B_1$ falls in the set $\{ 2, .4, -.5, .2, -2 \}$ as in Utazi. We set spatial variance to $1$ and vary the spatial range in our simulations, again to replicate Utazi, with values $.3$, $.5$, and $.7$ which lead to $\kappa$ values of $9.4$, $5.7$ and $4.0$ repectively. 
+
+![test](https://i.imgur.com/pd2uQZs.png)
+
+The underlying field is represented as a 60x60 unit matrix. Probability for points are taken from the unit which they fall into, $p_{\eta}$, and samples are taken from a Binomial sample with M trials and probabilty $p_{\eta}$. When we sample polygons we take a number of the units in the field that reside within the polygon and simulate M Bernoulli trails with probability $p_m$ which is randomly selected from the units within the polygon for each trail.
+
+Once the underlying field is constructed we divide the area into either 3x3(`rwidth_3`), 5x5(`rwidth_5`), or 10x10(`rwidth_10`) polygons. Each model then samples from the field using either only points(`point`), only one of the polygon divisions types (`rwidth_n poly`), a mixture of points and polygons where the two do not overlap (`rwidth_n mix`), an overlapping mixture of of points and polygons (`rwidth_n ov`). The total number of observations seen in each case is the same for each modeling strategy only the way the data is presented to us is different, coming from either point or polygon. In the vizualization the true field is labeled `True`.
+
+Data is then modeled as described [previously](https://nmmarquez.twilightparadox.com/AreaProbability.html). The results from a number of different simulation scenarios varying $B_1$, sptaial range, the number of observations (M), the covariate type that was used, and the RNG seed that created the simulation may be selected in the vizualization. You may also toggle between seeing the estimated field and the standard deviation of the estimates. The second and third tab shows the validation statistics for models either aggregated or sepeartely respectively.

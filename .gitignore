@@ -40,3 +40,5 @@ rsconnect/
 *.so
 *.o
 
+# Html files
+*.html
