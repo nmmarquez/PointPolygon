@@ -15,7 +15,12 @@ simulateFieldCI(field, modelFit, draws = 1000)
 }
 \value{
 data.frame, mean, CI, and sd of underlying field.
-
+}
+\description{
+Calculate the mean, 95% confidence intervals, and the standard
+deviation of an estimated probability field from a model.
+}
+\examples{
 ## Not run:
 
 unitSim <- simField(
@@ -36,8 +41,5 @@ unitFit <- runFieldModel(unitSim, pointDF)
 head(simulateFieldCI(unitSim, unitFit))
 
 ## End(**Not run**)
-}
-\description{
-Calculate the mean, 95% confidence intervals, and the standard
-deviation of an estimated probability field from a model.
+
 }

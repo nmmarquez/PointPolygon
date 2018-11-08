@@ -8,6 +8,7 @@
 #' 
 #' @return ggplot object of underlying field
 #'
+#' @examples 
 #' unitSim <- simField(
 #' N = 100, rangeE = .5,
 #' offset = c(0.1, 0.2), 

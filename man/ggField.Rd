@@ -13,7 +13,12 @@ ggField(field, plotVar = "theta")
 }
 \value{
 ggplot object of underlying field
-
+}
+\description{
+Run a model and estimate underlying latent and probability
+field from point and polygon data using TMB.
+}
+\examples{
 unitSim <- simField(
 N = 100, rangeE = .5,
 offset = c(0.1, 0.2), 
@@ -21,8 +26,5 @@ max.edge = c(0.1,0.2),
 beta0 = -2)
 
 ggField(unitSim)
-}
-\description{
-Run a model and estimate underlying latent and probability
-field from point and polygon data using TMB.
+  
 }

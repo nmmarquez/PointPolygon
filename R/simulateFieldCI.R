@@ -9,6 +9,7 @@
 #' 
 #' @return data.frame, mean, CI, and sd of underlying field.
 #' 
+#' @examples
 #' ## Not run:
 #' 
 #' unitSim <- simField(
