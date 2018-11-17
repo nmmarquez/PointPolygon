@@ -1,0 +1,56 @@
+# Simulation Experiment
+
+The goal here is to simulate a 1x1 spatial probability field using the function `simField` in the `PointPolygon` package. We want to construct our probabilty field using a linear model with a inverse logit transfrom to guarantee that each of the probabilities constructed lie between 1 and 0. For each pixel $i$ we then simiulate data such that
+
+$$
+\text{logit}(p_i) = \beta_0 + X_i \beta_1 + \eta(s_i)
+$$
+
+$\beta_0$ is the "intercept" $X_i \beta_1$ is the multiplicative effect $\beta_1$ that the covariate value $X_i$ has on the probability of observing an event, and $\eta(s_i)$ is a spatial random effect that follows a Matern Gaussian process as described in "An explicit link between Gaussian fields and Gaussian Markov random fields: The SPDE approach" Lindgren et al. (2011). The effect of the spatial process is determined by two paramters `rangeE` which determines the distance of the range of the spatial process, and `sigmaE` which detrmines the process variance. For all simulations we will set `sigmaE` to 1 and vary `rangeE` from the three values .3, .5, and .7 as outlined in the Utazi paper. We will set the intercept $B_0$ value to always be -2 which corresponds to the r option `beta0`. For the covariate we also assign a value for the $\beta_1$ as well as how the covariate is distributed either `"random"` `"spatial"` or `"cluster"`. For this demo we will use only one covaritae and make it random.
+
+
+```{R, warning=FALSE, message=F}
+rm(list=ls())
+library(rgeos)
+library(sp)
+require(tidyr)
+require(gridExtra)
+require(dplyr)
+require(ggplot2)
+library(PointPolygon)
+
+args <- commandArgs(trailingOnly=TRUE)
+
+# range of the underlying spatial process as defined 
+rangeE <- .5 # range of spatial prces varies from {.3, .5, .7}
+covVal <- 2 # covariate effect in set {.2, .4, -.5, .2, -2}
+covType <- "random" # either random spatial or cluster 
+M <- 100 # number of samples in Polygons chosen from U(50, 300)
+seed <- 12345 # RNG
+
+unitSim <- simField(
+    N = 60, # how detailed the grid is creates an NxN grid
+    offset = c(0.1, 0.2), # all simulations will have this to create pred mesh 
+    max.edge = c(0.05,0.2), # all simulations will have this to create pred mesh
+    beta0 = -2, # the intercept term 
+    betaList = list(list(type="random", value=2))) # the cov type and value
+```
+
+We have now simulaed our 1x1 field. Lets examine the distributions for the covariate `V1`, the spatial effect `z`, and then the combined effect of the probability field `theta`.
+
+```{R}
+# just some R plotting 
+plotList <- lapply(c("V0", "V1", "z", "theta"), function(eff){
+    unitSim$spdf@data %>%
+        gather("Effect", "Value", V0:theta) %>%
+        filter(Effect==eff) %>%
+        ggplot(aes(x, y, fill=Value)) +
+        geom_raster() +
+        coord_equal() +
+        theme_void() +
+        scale_fill_distiller(palette = "Spectral") +
+        ggtitle(eff)
+})
+
+do.call(grid.arrange, c(plotList, ncol=2))
+```
