@@ -5,9 +5,7 @@
 \title{Run a Model and Estimate Underlying Field From Point and Polygon Data}
 \usage{
 runFieldModel(field, pointDF = NULL, polyDF = NULL, verbose = FALSE,
-  symbolic = TRUE, modelpath = "~/Documents/PointPolygon/isrc/",
-  control = list(eval.max = 10000, iter.max = 10000),
-  recompile = FALSE)
+  symbolic = TRUE, control = list(eval.max = 10000, iter.max = 10000))
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -20,11 +18,7 @@ runFieldModel(field, pointDF = NULL, polyDF = NULL, verbose = FALSE,
 
 \item{symbolic}{logical, use metas reordering in model fitting}
 
-\item{modelpath}{character, folder where model file resides}
-
 \item{control}{list, control list passed to nlminb}
-
-\item{recompile}{logical, rebuild model for testing purposes only}
 }
 \value{
 List of fitted model objects.

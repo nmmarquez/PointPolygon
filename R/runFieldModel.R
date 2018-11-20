@@ -8,9 +8,7 @@
 #' @param polyDF data simulated from samplePolygns
 #' @param verbose logical, print model fitting information
 #' @param symbolic logical, use metas reordering in model fitting
-#' @param modelpath character, folder where model file resides
 #' @param control list, control list passed to nlminb
-#' @param recompile logical, rebuild model for testing purposes only
 #' 
 #' @return List of fitted model objects.
 #' 
@@ -44,17 +42,10 @@ runFieldModel <- function(
     polyDF = NULL,
     verbose = FALSE,
     symbolic = TRUE,
-    modelpath = "~/Documents/PointPolygon/isrc/",
-    control = list(eval.max=1e4, iter.max=1e4),
-    recompile = FALSE){
-    model <- "model"
-    fullPath <- paste0(modelpath, model)
-    if(recompile){
-        TMB::compile(paste0(fullPath, ".cpp"))
-    }
+    control = list(eval.max=1e4, iter.max=1e4)){
+    model <- "PointPolygon"
 
     inputs <- buildModelInputs(field, pointDF=pointDF, polyDF=polyDF)
-    dyn.load(TMB::dynlib(fullPath))
     startTime <- Sys.time()
     Obj <- TMB::MakeADFun(
         data = inputs$Data,
@@ -74,7 +65,6 @@ runFieldModel <- function(
         control = control)
     sdrep <- TMB::sdreport(Obj, getJointPrecision=TRUE)
     runtime <- Sys.time() - startTime
-    nah <- utils::capture.output(dyn.unload(TMB::dynlib(fullPath)))
 
     list(obj=Obj, opt=Opt, runtime=runtime, sd=sdrep)
 }
