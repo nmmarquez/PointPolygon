@@ -1,0 +1,148 @@
+---
+output: html_document
+---
+
+```{R, warning=FALSE, message=F, echo=F}
+rm(list=ls())
+library(arm)
+library(rgeos)
+library(sp)
+require(tidyr)
+require(gridExtra)
+require(dplyr)
+require(ggplot2)
+library(PointPolygon)
+
+
+args <- commandArgs(trailingOnly=TRUE)
+
+# range of the underlying spatial process as defined 
+rangeE <- .5 # range of spatial prces varies from {.3, .5, .7}
+covVal <- 2 # covariate effect in set {.2, .4, -.5, .2, -2}
+M <- 100 # number of samples in Polygons chosen from U(50, 300)
+seed <- 12345 # RNG
+
+set.seed(seed)
+```
+
+```{R, warning=FALSE, message=F, echo=F}
+unitSim <- simField(
+    N = 60, # how detailed the grid is creates an NxN grid
+    offset = c(0.1, 0.2), # all simulations will have this to create pred mesh 
+    max.edge = c(0.05,0.2), # all simulations will have this to create pred mesh
+    beta0 = -2, # the intercept term
+    rangeE = rangeE,
+    betaList = list(list(type="random", value=covVal))) # the cov type & value
+
+
+# just some R plotting 
+plotList <- lapply(c("V1", "z", "theta"), function(eff){
+    unitSim$spdf@data %>%
+        gather("Effect", "Value", V0:theta) %>%
+        filter(Effect==eff) %>%
+        ggplot(aes(x, y, fill=Value)) +
+        geom_raster() +
+        coord_equal() +
+        theme_void() +
+        scale_fill_distiller(palette = "Spectral") +
+        ggtitle(NULL) +
+        guides(fill=FALSE)
+})
+
+p1 <- "/tmp/1.png"
+p2 <- "/tmp/2.png"
+p3 <- "/tmp/3.png"
+
+ggsave(p1, plotList[[1]], "png", width=.4, height=.4)
+ggsave(p2, plotList[[2]], "png", width=.4, height=.4)
+ggsave(p3, plotList[[3]], "png", width=.4, height=.4)
+```
+
+#### General Functional Form For Probability Surface
+
+$$
+\boldsymbol{p} = \text{inv.logit}(\beta_0 + \beta_1 \boldsymbol{X} + \eta(\boldsymbol{s}))
+$$
+
+#### Simulation 1: Randomly Distributed Covariate Effect
+
+<center>
+![](/tmp/3.png) $=\text{inv.logit}(\beta_0 + \beta_1 \times$ ![](/tmp/1.png) $+$ ![](/tmp/2.png) $)$
+</center>
+
+```{R, warning=FALSE, message=F, echo=F}
+unitSim <- simField(
+    N = 60, # how detailed the grid is creates an NxN grid
+    offset = c(0.1, 0.2), # all simulations will have this to create pred mesh 
+    max.edge = c(0.05,0.2), # all simulations will have this to create pred mesh
+    beta0 = -2, # the intercept term
+    rangeE = rangeE,
+    betaList = list(list(type="spatial", value=covVal))) # the cov type & value
+
+
+# just some R plotting 
+plotList <- lapply(c("V1", "z", "theta"), function(eff){
+    unitSim$spdf@data %>%
+        gather("Effect", "Value", V0:theta) %>%
+        filter(Effect==eff) %>%
+        ggplot(aes(x, y, fill=Value)) +
+        geom_raster() +
+        coord_equal() +
+        theme_void() +
+        scale_fill_distiller(palette = "Spectral") +
+        ggtitle(NULL) +
+        guides(fill=FALSE)
+})
+
+p1 <- "/tmp/4.png"
+p2 <- "/tmp/5.png"
+p3 <- "/tmp/6.png"
+
+ggsave(p1, plotList[[1]], "png", width=.4, height=.4)
+ggsave(p2, plotList[[2]], "png", width=.4, height=.4)
+ggsave(p3, plotList[[3]], "png", width=.4, height=.4)
+```
+
+#### Simulation 2: Spatially Correlated Covariate Effect
+
+<center>
+![](/tmp/6.png) $=\text{inv.logit}(\beta_0 + \beta_1 \times$ ![](/tmp/4.png) $+$ ![](/tmp/5.png) $)$
+</center>
+
+```{R, warning=FALSE, message=F, echo=F}
+unitSim <- simField(
+    N = 60, # how detailed the grid is creates an NxN grid
+    offset = c(0.1, 0.2), # all simulations will have this to create pred mesh 
+    max.edge = c(0.05,0.2), # all simulations will have this to create pred mesh
+    beta0 = -2, # the intercept term
+    rangeE = rangeE,
+    betaList = list(list(type="cluster", value=covVal))) # the cov type & value
+
+
+plotList <- lapply(c("V1", "z", "theta"), function(eff){
+    unitSim$spdf@data %>%
+        gather("Effect", "Value", V0:theta) %>%
+        filter(Effect==eff) %>%
+        ggplot(aes(x, y, fill=Value)) +
+        geom_raster() +
+        coord_equal() +
+        theme_void() +
+        scale_fill_distiller(palette = "Spectral") +
+        ggtitle(NULL) +
+        guides(fill=FALSE)
+})
+
+p1 <- "/tmp/7.png"
+p2 <- "/tmp/8.png"
+p3 <- "/tmp/9.png"
+
+ggsave(p1, plotList[[1]], "png", width=.4, height=.4)
+ggsave(p2, plotList[[2]], "png", width=.4, height=.4)
+ggsave(p3, plotList[[3]], "png", width=.4, height=.4)
+```
+
+#### Simulation 3: Clustered Covariate Effect
+
+<center>
+![p](/tmp/9.png) $=\text{inv.logit}(\beta_0 + \beta_1 \times$ ![](/tmp/7.png) $+$ ![](/tmp/8.png) $)$
+</center>
