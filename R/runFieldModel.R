@@ -14,8 +14,11 @@
 #' 
 #' @return List of fitted model objects.
 #' 
+#' @import TMB
+#' @useDynLib PointPolygon
+#' 
 #' @examples
-#' ## Not run:
+#' \dontrun{
 #' unitSim <- simField(
 #' N = 500, rangeE = .7,
 #' offset = c(0.1, 0.2), 
@@ -31,7 +34,7 @@
 #'
 #' runFieldModel(unitSim, pointDF)
 #'
-#' ## End(**Not run**)
+#' }
 #' 
 #' @export
 

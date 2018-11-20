@@ -1,0 +1,5 @@
+## Specify location of libcholmod.so
+ifdef LIBCHOLMOD
+  PKG_LIBS += $(LIBCHOLMOD)
+  PKG_CPPFLAGS += -D_USE_EXTERNAL_CHOLMOD_LIB_
+endif

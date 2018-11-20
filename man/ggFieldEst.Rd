@@ -21,6 +21,7 @@ Run a model and estimate underlying latent and probability
 field from point and polygon data using TMB.
 }
 \examples{
+\dontrun{
 unitSim <- simField(
 N = 100, rangeE = .5,
 offset = c(0.1, 0.2), 
@@ -35,5 +36,6 @@ modelPredList <- lapply(list(pointDF1, pointDF2), function(x){
 })
 
 ggFieldEst(unitSim, modelPredList)
-  
+}
+
 }

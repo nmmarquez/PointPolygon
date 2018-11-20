@@ -6,7 +6,8 @@
 \usage{
 runFieldModel(field, pointDF = NULL, polyDF = NULL, verbose = FALSE,
   symbolic = TRUE, modelpath = "~/Documents/PointPolygon/isrc/",
-  control = list(eval.max = 10000, iter.max = 10000), recompile = FALSE)
+  control = list(eval.max = 10000, iter.max = 10000),
+  recompile = FALSE)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -33,7 +34,7 @@ Run a model and estimate underlying latent and probability
 field from point and polygon data using TMB.
 }
 \examples{
-## Not run:
+\dontrun{
 unitSim <- simField(
 N = 500, rangeE = .7,
 offset = c(0.1, 0.2), 
@@ -49,6 +50,6 @@ pointDF <- samplePoints(unitSim, 500, 100)
 
 runFieldModel(unitSim, pointDF)
 
-## End(**Not run**)
+}
 
 }

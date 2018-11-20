@@ -10,7 +10,7 @@
 #' @return data.frame, mean, CI, and sd of underlying field.
 #' 
 #' @examples
-#' ## Not run:
+#' \dontrun{
 #' 
 #' unitSim <- simField(
 #' N = 200, rangeE = .7,
@@ -29,7 +29,7 @@
 #'
 #' head(simulateFieldCI(unitSim, unitFit))
 #'
-#' ## End(**Not run**)
+#' }
 #' 
 #' @export
 

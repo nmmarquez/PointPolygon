@@ -22,6 +22,8 @@ samplePPMix(field, N, M, p = 0.5, polygonList = NULL, rWidth = NULL,
 bounding box into approximately equal sized squares with rWidth number 
 squares along the x axis.}
 
+\item{replace}{logical, replace values in the sampling}
+
 \item{...}{further argumnets for compatibility}
 }
 \value{

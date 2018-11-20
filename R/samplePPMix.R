@@ -13,6 +13,7 @@
 #' @param rWidth integer, instead of using a polygon list divide the original
 #' bounding box into approximately equal sized squares with rWidth number 
 #' squares along the x axis.
+#' @param replace logical, replace values in the sampling
 #' @param ... further argumnets for compatibility 
 #' 
 #' @return list of data.frames with observation number, number of trials, 

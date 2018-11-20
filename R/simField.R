@@ -23,7 +23,7 @@
 #' approximation. The beta coefficients used to produce the underlying field.
 #'
 #' @examples
-#' ## Not run:
+#' \dontrun{
 #' require(tidyr)
 #' require(gridExtra)
 #' require(ar.matrix)
@@ -71,7 +71,7 @@
 #'     theme_void() +
 #'     scale_fill_distiller(palette = "Spectral")
 #'
-#' ## End(**Not run**)
+#' }
 #'
 #' @export
 
