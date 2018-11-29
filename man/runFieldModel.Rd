@@ -4,8 +4,9 @@
 \alias{runFieldModel}
 \title{Run a Model and Estimate Underlying Field From Point and Polygon Data}
 \usage{
-runFieldModel(field, pointDF = NULL, polyDF = NULL, verbose = FALSE,
-  symbolic = TRUE, control = list(eval.max = 10000, iter.max = 10000))
+runFieldModel(field, pointDF = NULL, polyDF = NULL, moption = 0,
+  verbose = FALSE, symbolic = TRUE, control = list(eval.max = 10000,
+  iter.max = 10000))
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -13,6 +14,10 @@ runFieldModel(field, pointDF = NULL, polyDF = NULL, verbose = FALSE,
 \item{pointDF}{data simulated from samplePoints}
 
 \item{polyDF}{data simulated from samplePolygns}
+
+\item{moption}{int, intger indicating how polygon data should be estimated 0
+is by Reimann sum approximation, 1 is by redistribution, and 2 is by Utazi
+approach.}
 
 \item{verbose}{logical, print model fitting information}
 

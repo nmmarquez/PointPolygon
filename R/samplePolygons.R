@@ -38,6 +38,7 @@
 samplePolygons <- function(field, M, p=1., polygonList=NULL, rWidth=NULL, ...){
     if(is.null(polygonList)){
         sectionedSPDF <- dividePolygon(field$bound, rWidth)
+        sectionedSPDF$polyid <- 1:nrow(sectionedSPDF@data)
         polygonList <- lapply(1:nrow(sectionedSPDF@data), function(i){
             sectionedSPDF[i,]
         })
@@ -49,7 +50,8 @@ samplePolygons <- function(field, M, p=1., polygonList=NULL, rWidth=NULL, ...){
     obsDF <- data.frame(
         id = I(lapply(1:sampleN, function(x) NA)),
         trials = rep(M, sampleN),
-        obs = NA)
+        obs = NA, 
+        polyid = NA)
 
     i <- 0
     for(j in polySamples){
@@ -58,6 +60,7 @@ samplePolygons <- function(field, M, p=1., polygonList=NULL, rWidth=NULL, ...){
         subSPDF$isPresent <- TRUE
         pointsDF <- cbind(sp::over(field$spdf, subSPDF), field$spdf@data)
         pointsDF <- pointsDF[!is.na(pointsDF$isPresent),]
+        obsDF$polyid[i] <- subSPDF$polyid
         obsDF$id[[i]] <- list(ids=pointsDF$id)
         obsDF$obs[i] <- sum(stats::rbinom(
             M, 1, sample(pointsDF$theta, M, replace=T)))

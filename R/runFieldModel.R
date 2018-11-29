@@ -6,6 +6,9 @@
 #' @param field field object which simulated underlying data
 #' @param pointDF data simulated from samplePoints
 #' @param polyDF data simulated from samplePolygns
+#' @param moption int, intger indicating how polygon data should be estimated 0
+#' is by Reimann sum approximation, 1 is by redistribution, and 2 is by Utazi
+#' approach.
 #' @param verbose logical, print model fitting information
 #' @param symbolic logical, use metas reordering in model fitting
 #' @param control list, control list passed to nlminb
@@ -40,12 +43,17 @@ runFieldModel <- function(
     field, 
     pointDF = NULL,
     polyDF = NULL,
+    moption = 0,
     verbose = FALSE,
     symbolic = TRUE,
     control = list(eval.max=1e4, iter.max=1e4)){
     model <- "PointPolygon"
 
-    inputs <- buildModelInputs(field, pointDF=pointDF, polyDF=polyDF)
+    inputs <- buildModelInputs(
+        field,
+        pointDF = pointDF,
+        polyDF = polyDF,
+        moption = moption)
     startTime <- Sys.time()
     Obj <- TMB::MakeADFun(
         data = inputs$Data,

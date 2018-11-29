@@ -4,7 +4,8 @@
 \alias{buildModelInputs}
 \title{Build model inputs for use with runFieldModel}
 \usage{
-buildModelInputs(field, pointDF = NULL, polyDF = NULL, model = TRUE)
+buildModelInputs(field, pointDF = NULL, polyDF = NULL, model = TRUE,
+  moption = 0)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}

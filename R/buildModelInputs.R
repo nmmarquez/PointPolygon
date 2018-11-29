@@ -11,7 +11,27 @@
 #' 
 #' @export
 
-buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL, model=TRUE){
+buildModelInputs <- function(
+    field,
+    pointDF=NULL,
+    polyDF=NULL,
+    model=TRUE,
+    moption=0){
+    idPoly <- vector(mode="integer")
+    if((moption == 1) & !is.null(polyDF)){
+        polyDF <- dplyr::bind_rows(lapply(1:nrow(polyDF), function(i){
+            ids <- polyDF[[i,"id"]][[1]]
+            outs <- c(
+                rep(1, polyDF[i,"obs"]),
+                rep(0, polyDF[i,"trials"] - polyDF[i,"obs"]))
+            data.frame(
+                id = sample(ids, polyDF[i,"trials"], replace=TRUE),
+                trials = 1,
+                obs = sample(outs, polyDF[i,"trials"])
+            )
+        }))
+        idPoly <- polyDF$id
+    }
     if(is.null(polyDF)){
         empty <- vector("integer")
         polyDF <- data.frame(obs=empty, trials=empty, id=empty)
@@ -56,10 +76,10 @@ buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL, model=TRUE){
             yPoly=polyDF$obs, denomPoly=polyDF$trials, covs=covs,
             M0=field$spde$param.inla$M0,M1=field$spde$param.inla$M1,
             M2=field$spde$param.inla$M2, AprojObs=field$AprojField,
-            AprojPoly=AprojPoly)
+            AprojPoly=AprojPoly, moption=moption, idPoly=idPoly)
     }
     else{
-        if(model){
+        if(model & (moption == 0)){
             AprojObs <- field$AprojField[idx,]
         }
         else{
@@ -72,7 +92,7 @@ buildModelInputs <- function(field, pointDF=NULL, polyDF=NULL, model=TRUE){
             yPoly=polyDF$obs, denomPoly=polyDF$trials, covs=covs,
             M0=field$spde$param.inla$M0,M1=field$spde$param.inla$M1,
             M2=field$spde$param.inla$M2, AprojObs=AprojObs,
-            AprojPoly=AprojPoly)
+            AprojPoly=AprojPoly, moption=moption, idPoly=idPoly)
     }
 
     Params <- list(
