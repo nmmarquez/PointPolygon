@@ -33,5 +33,7 @@ dividePolygon <- function(shape, rWidth){
         ncols=rWidth, nrows=round(rWidth*hRatio(shape)), 
         xmn=bb[1,1], xmx=bb[1,2], ymn=bb[2,1], ymx=bb[2,2], 
         crs=shape@proj4string))
-    raster::intersect(shape, baseRaster)
+    sectionedSPDF <- raster::intersect(shape, baseRaster)
+    sectionedSPDF$polyid <- 1:nrow(sectionedSPDF@data)
+    sectionedSPDF
 }

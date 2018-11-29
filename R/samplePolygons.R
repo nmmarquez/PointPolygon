@@ -38,7 +38,6 @@
 samplePolygons <- function(field, M, p=1., polygonList=NULL, rWidth=NULL, ...){
     if(is.null(polygonList)){
         sectionedSPDF <- dividePolygon(field$bound, rWidth)
-        sectionedSPDF$polyid <- 1:nrow(sectionedSPDF@data)
         polygonList <- lapply(1:nrow(sectionedSPDF@data), function(i){
             sectionedSPDF[i,]
         })

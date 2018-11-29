@@ -44,7 +44,6 @@ samplePPMix <- function(
     field, N, M, p=.5, polygonList=NULL, rWidth=NULL, replace=TRUE, ...){
     if(is.null(polygonList)){
         sectionedSPDF <- dividePolygon(field$bound, rWidth)
-        sectionedSPDF$polyid <- 1:nrow(sectionedSPDF@data)
         polygonList <- lapply(1:nrow(sectionedSPDF@data), function(i){
             sectionedSPDF[i,]
         })
