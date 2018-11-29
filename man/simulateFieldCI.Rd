@@ -21,7 +21,7 @@ Calculate the mean, 95% confidence intervals, and the standard
 deviation of an estimated probability field from a model.
 }
 \examples{
-## Not run:
+\dontrun{
 
 unitSim <- simField(
 N = 200, rangeE = .7,
@@ -40,6 +40,6 @@ unitFit <- runFieldModel(unitSim, pointDF)
 
 head(simulateFieldCI(unitSim, unitFit))
 
-## End(**Not run**)
+}
 
 }

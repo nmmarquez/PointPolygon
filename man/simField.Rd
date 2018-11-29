@@ -4,8 +4,8 @@
 \alias{simField}
 \title{Simulate A continous 2D spatial field using SPDE}
 \usage{
-simField(N = 60, sigmaE = 1, rangeE = 0.3, shape = NULL, beta0 = 0,
-  betaList = list(), link = arm::invlogit, ...)
+simField(N = 60, sigmaE = 1, rangeE = 0.3, shape = NULL,
+  beta0 = 0, betaList = list(), link = arm::invlogit, ...)
 }
 \arguments{
 \item{N}{Number of width pixels for the projection}
@@ -40,7 +40,7 @@ observed field which is a linear combination of covariates their beta values
 with an optional link function applied.
 }
 \examples{
-## Not run:
+\dontrun{
 require(tidyr)
 require(gridExtra)
 require(ar.matrix)
@@ -88,6 +88,6 @@ usSim$spdf@data  \%>\%
     theme_void() +
     scale_fill_distiller(palette = "Spectral")
 
-## End(**Not run**)
+}
 
 }

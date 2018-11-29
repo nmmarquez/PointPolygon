@@ -4,7 +4,8 @@
 \alias{samplePolygons}
 \title{Take Observations from Polygons within the latent field}
 \usage{
-samplePolygons(field, M, p = 1, polygonList = NULL, rWidth = NULL, ...)
+samplePolygons(field, M, p = 1, polygonList = NULL, rWidth = NULL,
+  ...)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}

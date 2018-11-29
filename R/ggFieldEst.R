@@ -9,7 +9,8 @@
 #' 
 #' @return ggplot object of underlying field and model estimates
 #'
-#' @examples 
+#' @examples
+#' \dontrun{
 #' unitSim <- simField(
 #' N = 100, rangeE = .5,
 #' offset = c(0.1, 0.2), 
@@ -24,7 +25,8 @@
 #' })
 #' 
 #' ggFieldEst(unitSim, modelPredList)
-#'   
+#' }
+#' 
 #' @export
 
 ggFieldEst <- function(field, predList, sd=FALSE){
