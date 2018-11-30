@@ -25,7 +25,7 @@ approach.}
 
 \item{control}{list, control list passed to nlminb}
 
-\item{rWidth}{int, only used in moption 3 to build besag prior}
+\item{rWidth}{int, only used in moption 2 to build besag prior}
 }
 \value{
 List of fitted model objects.

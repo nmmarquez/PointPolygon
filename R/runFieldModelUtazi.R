@@ -19,7 +19,6 @@
 #' @import sp
 #' @import dplyr
 #' @import INLA
-#' @import stats
 #' 
 #' @examples
 #' \dontrun{
@@ -161,7 +160,8 @@ runFieldModelUtazi <- function(
         family = "binomial",
         Ntrials = stack.all$data$data$n,
         control.predictor=list(compute=TRUE, A=inla.stack.A(stack.all), link=1),
-        control.compute=list(dic=TRUE, config=TRUE))
+        control.compute=list(dic=TRUE, config=TRUE),
+        verbose = verbose)
     
     runtime <- Sys.time() - startTime
     
