@@ -6,6 +6,9 @@
 #' @param pointDF data simulated from samplePoints
 #' @param polyDF data simulated from samplePolygns
 #' @param model logical, build model inputs for modeling rather than prediction
+#' @param moption int, intger indicating how polygon data should be estimated 0
+#' is by Reimann sum approximation, 1 is by redistribution, and 2 is by Utazi
+#' approach.
 #' 
 #' @return List of data and parameter objects to be used in TMB model run.
 #' 
@@ -34,7 +37,7 @@ buildModelInputs <- function(
     }
     if(is.null(polyDF)){
         empty <- vector("integer")
-        polyDF <- data.frame(obs=empty, trials=empty, id=empty)
+        polyDF <- data.frame(obs=empty, trials=empty, id=empty, polyid=empty)
     }
     if(is.null(pointDF)){
         empty <- vector("integer")

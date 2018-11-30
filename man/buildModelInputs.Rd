@@ -15,6 +15,10 @@ buildModelInputs(field, pointDF = NULL, polyDF = NULL, model = TRUE,
 \item{polyDF}{data simulated from samplePolygns}
 
 \item{model}{logical, build model inputs for modeling rather than prediction}
+
+\item{moption}{int, intger indicating how polygon data should be estimated 0
+is by Reimann sum approximation, 1 is by redistribution, and 2 is by Utazi
+approach.}
 }
 \value{
 List of data and parameter objects to be used in TMB model run.

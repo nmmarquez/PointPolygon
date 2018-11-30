@@ -15,6 +15,7 @@ Imports:
     rgdal,
     sp,
     rgeos,
+    stats,
     dplyr,
     arm,
     TMB,
