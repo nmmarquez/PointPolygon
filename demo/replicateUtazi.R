@@ -1,11 +1,17 @@
-.libPaths( c( .libPaths(), "~/R3.5") )
-
+.libPaths(c("~/R3.5/", .libPaths()))
 rm(list=ls())
 library(rgeos)
 library(sp)
 library(PointPolygon)
 
 args <- commandArgs(trailingOnly=TRUE)
+
+# for testing
+# rangeE <- .3 
+# covVal <- 2 
+# covType <- "random"  
+# M <- as.integer(150)
+# seed <- as.integer(123) 
 
 rangeE <- as.numeric(args[1]) # range of spatial prces varies from {.3, .5, .7}
 covVal <- as.numeric(args[2]) # covariate effect in set {.2, .4, -.5, .2, -2}
@@ -33,6 +39,7 @@ unitSim <- simField(
     link = arm::invlogit,
     offset = c(0.1, 0.2),
     max.edge = c(0.05,0.2))
+
 
 rWidthSamples <- c("3"=3, "5"=5, "10"=10)
 pointSamples <- 250
@@ -68,36 +75,99 @@ ovDFList <- lapply(rWidthSamples, function(x){
     )})
 
 # run all the models!!!
-unitModelList <- c(
-    lapply(polyDFList, function(pdf){
-        runFieldModel(
-            unitSim,
-            polyDF=pdf, 
-            verbose=T,
-            control=list())}),
-    lapply(mixDFList, function(mix){
-        runFieldModel(
-            unitSim,
-            pointDF = mix$pointDF,
-            polyDF = mix$polyDF, 
-            verbose=T,
-            control=list())}),
-    lapply(ovDFList, function(ov){
-        runFieldModel(
-            unitSim,
-            pointDF = ov$pointDF,
-            polyDF = ov$polyDF, 
-            verbose=T,
-            control=list())}),
-    list(point=runFieldModel(unitSim, pointDF, verbose=T, control=list()))
+unitModelList <- list(
+    riemann = c(
+        lapply(1:length(polyDFList), function(i){
+            runFieldModel(
+                unitSim,
+                polyDF=polyDFList[[i]], 
+                verbose=T,
+                control=list())}),
+        lapply(1:length(mixDFList), function(i){
+            runFieldModel(
+                unitSim,
+                pointDF = mixDFList[[i]]$pointDF,
+                polyDF = mixDFList[[i]]$polyDF, 
+                verbose=T,
+                control=list())}),
+        lapply(1:length(ovDFList), function(i){
+            runFieldModel(
+                unitSim,
+                pointDF = ovDFList[[i]]$pointDF,
+                polyDF = ovDFList[[i]]$polyDF, 
+                verbose=T,
+                control=list())})
+        ),
+    resample = c(
+        lapply(1:length(polyDFList), function(i){
+            runFieldModel(
+                unitSim,
+                polyDF=polyDFList[[i]], 
+                verbose=T,
+                control=list(),
+                moption=1)}),
+        lapply(1:length(mixDFList), function(i){
+            runFieldModel(
+                unitSim,
+                pointDF = mixDFList[[i]]$pointDF,
+                polyDF = mixDFList[[i]]$polyDF, 
+                verbose=T,
+                control=list(),
+                moption=1)}),
+        lapply(1:length(ovDFList), function(i){
+            runFieldModel(
+                unitSim,
+                pointDF = ovDFList[[i]]$pointDF,
+                polyDF = ovDFList[[i]]$polyDF, 
+                verbose=T,
+                control=list(),
+                moption=1)})
+        ),
+    utazi = c(
+        lapply(1:length(polyDFList), function(i){
+            runFieldModel(
+                unitSim,
+                polyDF=polyDFList[[i]], 
+                verbose=T,
+                control=list(),
+                moption=2,
+                rWidth=rWidthSamples[i])}),
+        lapply(1:length(mixDFList), function(i){
+            runFieldModel(
+                unitSim,
+                pointDF = mixDFList[[i]]$pointDF,
+                polyDF = mixDFList[[i]]$polyDF, 
+                verbose=T,
+                control=list(),
+                moption=2,
+                rWidth=rWidthSamples[i])}),
+        lapply(1:length(ovDFList), function(i){
+            runFieldModel(
+                unitSim,
+                pointDF = ovDFList[[i]]$pointDF,
+                polyDF = ovDFList[[i]]$polyDF, 
+                verbose=T,
+                control=list(),
+                moption=2,
+                rWidth=rWidthSamples[i])})
+        ),
+    point=list(point=runFieldModel(unitSim, pointDF, verbose=T, control=list()))
 )
 
-names(unitModelList) <- c(paste0(
+names(unitModelList$riemann) <- paste0(
     rep(paste0("rwidth_", rWidthSamples), 3),
-    rep(c(" poly", " mix", " ov"), each=length(rWidthSamples))), "point")
+    rep(c(" poly", " mix", " ov"), each=length(rWidthSamples)))
+names(unitModelList$resample) <- paste0(
+    rep(paste0("rwidth_", rWidthSamples), 3),
+    rep(c(" poly", " mix", " ov"), each=length(rWidthSamples)))
+names(unitModelList$utazi) <- paste0(
+    rep(paste0("rwidth_", rWidthSamples), 3),
+    rep(c(" poly", " mix", " ov"), each=length(rWidthSamples)))
 
-unitFitList <- lapply(unitModelList, function(ffit){
-    simulateFieldCI(unitSim, ffit)})
+unitFitList <- lapply(unitModelList, function(type){
+    lapply(type, function(ffit){
+        simulateFieldCI(unitSim, ffit)})
+})
 
 unitResults <- list(
     sim = unitSim,

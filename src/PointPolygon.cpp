@@ -28,6 +28,7 @@ Type objective_function<Type>::operator() ()
     // Denoms
     DATA_IVECTOR(denomPoint);
     DATA_IVECTOR(denomPoly);
+    DATA_IVECTOR(idPoly);
 
     //Covariates
     DATA_MATRIX(covs);
@@ -40,6 +41,9 @@ Type objective_function<Type>::operator() ()
     DATA_SPARSE_MATRIX(M0);
     DATA_SPARSE_MATRIX(M1);
     DATA_SPARSE_MATRIX(M2);
+    
+    // Polygon Modeling Option
+    DATA_INTEGER(moption);
 
     // Parameters
     PARAMETER_VECTOR(beta);
@@ -67,7 +71,6 @@ Type objective_function<Type>::operator() ()
     vector<Type> projLatF = AprojObs * z;
     vector<Type> projCov = covs * beta;
     vector<Type> projLatObs = projLatF + projCov;
-    // printf("%s\n", "Matrix Mult 3.");
     vector<Type> projPObs = exp(projLatObs) / (Type(1.) + exp(projLatObs));
 
     for(int i=0; i<Npoint; i++){
@@ -77,12 +80,22 @@ Type objective_function<Type>::operator() ()
     }
 
     if(Npoly != 0){
-        // printf("%s\n", "Evaluating likelihood of Polygons.");
-        SparseMatrix<Type> RAprojPoly = AprojPoly.transpose();
-        vector<Type> projPoly = RAprojPoly * projPObs;
-        for(int i=0; i<Npoly; i++){
-            Type p = projPoly[i];
-            nll -= dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, true);
+        // Reimann sum integration
+        if(moption == 0){
+            // printf("%s\n", "Evaluating likelihood of Polygons.");
+            SparseMatrix<Type> RAprojPoly = AprojPoly.transpose();
+            vector<Type> projPoly = RAprojPoly * projPObs;
+            for(int i=0; i<Npoly; i++){
+                Type p = projPoly[i];
+                nll -= dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, true);
+            }
+        }
+        // Redistribute points
+        if(moption == 1){
+            for(int i=0; i<Npoly; i++){
+                Type p = projPObs[idPoly[i]];
+                nll -= dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, true);
+            }
         }
     }
 

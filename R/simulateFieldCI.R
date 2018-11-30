@@ -34,6 +34,22 @@
 #' @export
 
 simulateFieldCI <- function(field, modelFit, draws=1000){
+    if(modelFit$moption == 2){
+        post.samples <- inla.posterior.sample(1000, modelFit)
+        index.pred <- inla.stack.index(modelFit$stack, "pred")$data
+        pSamples <- arm::invlogit(sapply(post.samples, function(z){
+            z$latent[index.pred,]}))
+        resultsDF <- data.frame(
+            mu = apply(pSamples, 1, mean),
+            sd = apply(pSamples, 1, sd),
+            lwr = apply(pSamples, 1, quantile, probs=.025),
+            upr = apply(pSamples, 1, quantile, probs=.975),
+            id = field$spdf$id,
+            trueValue = field$spdf$theta
+        )
+        row.names(resultsDF) <- NULL
+        return(resultsDF)
+    }
     modelLRP <- buildModelInputs(field, model=FALSE)
     
     parDraws <- t(ar.matrix::sim.AR(draws, modelFit$sd$jointPrecision)) +

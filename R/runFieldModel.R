@@ -6,9 +6,13 @@
 #' @param field field object which simulated underlying data
 #' @param pointDF data simulated from samplePoints
 #' @param polyDF data simulated from samplePolygns
+#' @param moption int, intger indicating how polygon data should be estimated 0
+#' is by Reimann sum approximation, 1 is by redistribution, and 2 is by Utazi
+#' approach.
 #' @param verbose logical, print model fitting information
 #' @param symbolic logical, use metas reordering in model fitting
 #' @param control list, control list passed to nlminb
+#' @param rWidth int, only used in moption 2 to build besag prior
 #' 
 #' @return List of fitted model objects.
 #' 
@@ -40,12 +44,33 @@ runFieldModel <- function(
     field, 
     pointDF = NULL,
     polyDF = NULL,
+    moption = 0,
     verbose = FALSE,
     symbolic = TRUE,
-    control = list(eval.max=1e4, iter.max=1e4)){
+    control = list(eval.max=1e4, iter.max=1e4),
+    rWidth = NULL){
     model <- "PointPolygon"
-
-    inputs <- buildModelInputs(field, pointDF=pointDF, polyDF=polyDF)
+    if(is.null(polyDF)){
+        moption <- 0
+    }
+    if(moption == 2){
+        fit <- runFieldModelUtazi(
+            field, 
+            pointDF,
+            polyDF,
+            moption,
+            verbose,
+            symbolic,
+            control,
+            rWidth)
+        
+        return(fit)
+    }
+    inputs <- buildModelInputs(
+        field,
+        pointDF = pointDF,
+        polyDF = polyDF,
+        moption = moption)
     startTime <- Sys.time()
     Obj <- TMB::MakeADFun(
         data = inputs$Data,
@@ -66,5 +91,11 @@ runFieldModel <- function(
     sdrep <- TMB::sdreport(Obj, getJointPrecision=TRUE)
     runtime <- Sys.time() - startTime
 
-    list(obj=Obj, opt=Opt, runtime=runtime, sd=sdrep)
+    list(
+        obj = Obj,
+        opt = Opt,
+        runtime = runtime,
+        sd = sdrep,
+        moption = moption,
+        stack=NULL)
 }

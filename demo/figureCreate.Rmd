@@ -14,8 +14,6 @@ require(ggplot2)
 library(PointPolygon)
 
 
-args <- commandArgs(trailingOnly=TRUE)
-
 # range of the underlying spatial process as defined 
 rangeE <- .5 # range of spatial prces varies from {.3, .5, .7}
 covVal <- 2 # covariate effect in set {.2, .4, -.5, .2, -2}
@@ -146,3 +144,59 @@ ggsave(p3, plotList[[3]], "png", width=.4, height=.4)
 <center>
 ![p](/tmp/9.png) $=\text{inv.logit}(\beta_0 + \beta_1 \times$ ![](/tmp/7.png) $+$ ![](/tmp/8.png) $)$
 </center>
+
+```{R}
+pointSampleDF <- samplePoints(unitSim, N=250, M=50)
+polyFrame <- dividePolygon(unitSim$bound, 3)
+polyFrame$id <- 1:9
+polyDF <- fortify(polyFrame, region="id") %>%
+    mutate(id=as.numeric(id)) %>%
+    left_join(polyFrame@data, by="id")
+boundDF <- fortify(dividePolygon(unitSim$bound, 1))
+
+ggplot() +
+    geom_path(
+        aes(long,lat, group=group, fill=NULL, z=NULL),
+        color="black",
+        size=.8,
+        data=boundDF) +
+    theme_void() + 
+    geom_raster(
+        aes(x=x, y=y, fill=is.na(obs)),
+        data=pointSampleDF %>% right_join(unitSim$spdf@data)) +
+    scale_fill_manual(
+        breaks = c(TRUE, FALSE),
+        values=c("black", "white")) +
+    guides(fill=FALSE)
+
+polyDF %>%
+    mutate(val="1") %>%
+    ggplot(aes(long,lat,group=group, fill=val)) + 
+    geom_polygon() +
+    geom_path(color="black", size=.1) +
+    scale_fill_manual(breaks="1", values="grey50") +
+    theme_void() +
+    guides(fill=FALSE)
+
+ggplot() +
+    theme_void() +
+    geom_raster(
+        aes(x=x, y=y, fill=is.na(obs)),
+        data=pointSampleDF %>%
+            right_join(unitSim$spdf@data) %>%
+            mutate(val=as.character(is.na(obs) + 2))) +
+    scale_fill_manual(
+        breaks = c("1", "2", "3"),
+        values=c("black", "white", "grey50")) +
+    geom_path(
+        aes(long,lat, group=group, fill=NULL, z=NULL),
+        color="black",
+        size=.3,
+        data=polyDF) +
+    # geom_polygon(
+    #     aes(long,lat,group=group,fill="grey50"),
+    #     data = polyDF %>%
+    #         mutate(val=factor("3", as.character(1:3)))) +
+    guides(fill=FALSE)
+
+```

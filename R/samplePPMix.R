@@ -61,7 +61,8 @@ samplePPMix <- function(
     obsDF <- data.frame(
         id = I(lapply(1:sampleN, function(x) NA)),
         trials = rep(0, sampleN),
-        obs = 0)
+        obs = 0,
+        polyid = NA)
     
     i <- 0
     for(j in polySamples){
@@ -74,6 +75,7 @@ samplePPMix <- function(
         pRemoveDF <- subset(DF, id %in% pointsDF$id)
         mPolyTotal <- sum(pRemoveDF$trials)
         obsDF$trials[i] <- mPolyTotal
+        obsDF$polyid[i] <- subSPDF$polyid
         obsDF$obs[i] <- sum(stats::rbinom(
             mPolyTotal, 1, sample(pointsDF$theta, mPolyTotal, replace=T)))
         DF <- subset(DF, !(id %in% pointsDF$id))
