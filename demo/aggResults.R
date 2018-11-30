@@ -1,8 +1,10 @@
+.libPaths(c("~/R3.5/", .libPaths()))
 rm(list=ls())
 library(tibble)
 library(dplyr)
 library(parallel)
 library(readr)
+library(PointPolygon)
 
 rdsPathList <- list.files("~/Data/utaziTest", full.names=TRUE)
 

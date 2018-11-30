@@ -7,11 +7,11 @@ library(PointPolygon)
 args <- commandArgs(trailingOnly=TRUE)
 
 # for testing
-# rangeE <- .3 
-# covVal <- 2 
-# covType <- "random"  
+# rangeE <- .3
+# covVal <- 2
+# covType <- "random"
 # M <- as.integer(150)
-# seed <- as.integer(123) 
+# seed <- as.integer(123)
 
 rangeE <- as.numeric(args[1]) # range of spatial prces varies from {.3, .5, .7}
 covVal <- as.numeric(args[2]) # covariate effect in set {.2, .4, -.5, .2, -2}
