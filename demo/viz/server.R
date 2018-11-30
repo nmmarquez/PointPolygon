@@ -10,6 +10,8 @@ library(DT)
 
 dt1 <- read_csv("~/Data/utaziResults/aggRes.csv")
 dt2 <- read_csv("~/Data/utaziResults/results.csv")
+fileName <- '~/Documents/PointPolygon/demo/ppExplain.html'
+descHTML <- readChar(fileName, file.info(fileName)$size)
 
 shinyServer(function(input,output){
     output$mest <- renderPlot({
@@ -31,6 +33,10 @@ shinyServer(function(input,output){
     
     output$dt2 <- renderDT({
         dt2
+    })
+    
+    output$desc <- renderUI({
+        withMathJax(HTML(descHTML))
     })
   
 })

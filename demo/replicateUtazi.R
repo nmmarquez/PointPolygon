@@ -1,3 +1,5 @@
+.libPaths( c( .libPaths(), "~/R3.5") )
+
 rm(list=ls())
 library(rgeos)
 library(sp)

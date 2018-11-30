@@ -16,7 +16,8 @@ body <- dashboardBody(
              tabBox(id='tabvals', width=NULL,
                     tabPanel('Model Estimates', plotOutput('mest'), value=1),
                     tabPanel('Model Stats Summary', DTOutput('dt1'), value=2),
-                    tabPanel('Model Stats', DTOutput('dt2'), value=3)                    
+                    tabPanel('Model Stats', DTOutput('dt2'), value=3),
+                    tabPanel('Description', htmlOutput('desc'), value=4)
              )
       )
     ),
