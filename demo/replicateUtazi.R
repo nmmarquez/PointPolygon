@@ -169,10 +169,16 @@ unitFitList <- lapply(unitModelList, function(type){
         simulateFieldCI(unitSim, ffit)})
 })
 
+unitBetaList <- lapply(unitModelList, function(type){
+    lapply(type, function(ffit){
+        simulateBetas(unitSim, ffit)})
+})
+
 unitResults <- list(
     sim = unitSim,
     pred = unitFitList,
-    model = unitModelList,
+    betas = unitBetaList,
+    # model = unitModelList, # this takes up a lot of space so ignore for now
     covType = covType,
     rangeE = rangeE,
     covVal = covVal,
