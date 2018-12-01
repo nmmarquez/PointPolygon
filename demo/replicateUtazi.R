@@ -174,11 +174,17 @@ unitBetaList <- lapply(unitModelList, function(type){
         simulateBetas(unitSim, ffit)})
 })
 
+convergeList <- lapply(unitModelList, function(type){
+  lapply(type, function(ffit){
+    ffit$opt$convergence})
+})
+
 unitResults <- list(
     sim = unitSim,
     pred = unitFitList,
     betas = unitBetaList,
     # model = unitModelList, # this takes up a lot of space so ignore for now
+    converge = convergeList,
     covType = covType,
     rangeE = rangeE,
     covVal = covVal,
