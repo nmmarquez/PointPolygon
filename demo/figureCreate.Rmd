@@ -39,7 +39,7 @@ plotList <- lapply(c("V1", "z", "theta"), function(eff){
         gather("Effect", "Value", V0:theta) %>%
         filter(Effect==eff) %>%
         ggplot(aes(x, y, fill=Value)) +
-        geom_raster() +
+        geom_raster(alpha=.6) +
         coord_equal() +
         theme_void() +
         scale_fill_distiller(palette = "Spectral") +
@@ -84,7 +84,7 @@ plotList <- lapply(c("V1", "z", "theta"), function(eff){
         gather("Effect", "Value", V0:theta) %>%
         filter(Effect==eff) %>%
         ggplot(aes(x, y, fill=Value)) +
-        geom_raster() +
+        geom_raster(alpha=.6) +
         coord_equal() +
         theme_void() +
         scale_fill_distiller(palette = "Spectral") +
@@ -122,7 +122,7 @@ plotList <- lapply(c("V1", "z", "theta"), function(eff){
         gather("Effect", "Value", V0:theta) %>%
         filter(Effect==eff) %>%
         ggplot(aes(x, y, fill=Value)) +
-        geom_raster() +
+        geom_raster(alpha=.6) +
         coord_equal() +
         theme_void() +
         scale_fill_distiller(palette = "Spectral") +
