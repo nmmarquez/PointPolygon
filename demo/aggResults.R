@@ -11,26 +11,6 @@ library(ggplot2)
 
 rdsPathList <- list.files("~/Data/utaziTest", full.names=TRUE)
 
-isnt_out_z <- function(x, thres = 3, na.rm = TRUE) {
-  abs(x - mean(x, na.rm = na.rm)) <= thres * sd(x, na.rm = na.rm)
-}
-
-smallResults <- mclapply(rdsPathList, function(f_){
-    x <- readRDS(f_)
-    results <- list(
-        covType = x$covType,
-        covVal = x$covVal,
-        M = x$M,
-        seed = x$seed
-    )
-    results$model <- lapply(x$model, function(m){
-        list(hess=m$sd$cov.fixed, est=m$sd$par.fixed)
-    })
-    results
-}, mc.cores=5)
-
-saveRDS(smallResults, "~/Data/utaziResults/smallResults.Rds")
-
 resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
     x <- readRDS(f_)
     pList <- unlist(x$pred, recursive=FALSE)
@@ -173,17 +153,15 @@ aggRes %>%
     select(rmseDiff, covDiff) %>%
     gather("key", "value") %>%
     group_by(key) %>%
-    mutate(not_out=isnt_out_z(value, thres = 2.2)) %>%
-    mutate(value.zoom=ifelse(not_out, value, NA)) %>%
-    ggplot(aes(value.zoom)) +
+    ggplot(aes(value)) +
     geom_density() +
     theme_classic() +
     facet_wrap(~key, scales = "free")
 
 table(resultsDF$covType)
 aggResDF <- resultsDF %>%
-    filter(convergence) %>%
-    group_by(type, covType, rangeE) %>%
+    filter(converge == 0 & model != "point") %>%
+    group_by(sampling, covType, rangeE, model) %>%
     summarize(
       mean(coverage), 
       min(coverage), 
@@ -191,10 +169,10 @@ aggResDF <- resultsDF %>%
       max(rmse),
       mean(correlation),
       min(correlation),
-      `mean(b0)`=mean(b0, na.rm=T),
-      `mean(b1)`=mean(b1, na.rm=T)) %>%
+      `mean(b0)`=mean(b0Cov, na.rm=T),
+      `mean(b1)`=mean(b1Cov, na.rm=T)) %>%
     as.data.frame %>%
-    arrange(covType, rangeE, -`mean(coverage)`)
+    arrange(covType, rangeE, sampling, -`mean(coverage)`)
 
 write_csv(aggResDF, "~/Data/utaziResults/aggRes.csv")
 write_csv(resultsDF, "~/Data/utaziResults/results.csv")

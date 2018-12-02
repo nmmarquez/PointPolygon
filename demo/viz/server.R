@@ -24,7 +24,13 @@ shinyServer(function(input,output){
             ",seed=", input$seed, ".Rds"
         )
         modelRez <- readRDS(fn)
-        ggFieldEst(modelRez$sim, modelRez$pred, sd=input$sd)
+        predList <- list(
+            riemann = modelRez$pred$riemann[[input$sampling]],
+            utazi = modelRez$pred$utazi[[input$sampling]],
+            resample = modelRez$pred$resample[[input$sampling]],
+            point = modelRez$pred$point$point
+        )
+        ggFieldEst(modelRez$sim, predList, sd=input$sd)
     })
     
     output$dt1 <- renderDT({

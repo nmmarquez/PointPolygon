@@ -6,6 +6,12 @@ library(sp)
 library(dplyr)
 library(DT)
 
+rWidthSamples <- c("3"=3, "5"=5, "10"=10)
+samps <- paste0(
+    rep(paste0("rwidth_", rWidthSamples), 3),
+    rep(c(" poly", " mix", " ov"), each=length(rWidthSamples)))
+
+
 header <- dashboardHeader(
   title = 'Point Polygon Estimates'
 )
@@ -78,6 +84,7 @@ paramDF <- expand.grid(
 sidebar <- dashboardSidebar(
     conditionalPanel(
         condition='input.tabvals==1',
+        selectInput('sampling', 'Sampling', samps),
         selectInput('range', 'Range', c(.7, .5, .3)),
         selectInput('cov', 'Cov Value', c(2, .4, -.5, .2, -2)),
         selectInput('ct', 'Cov Type',  c("random", "spatial", "cluster")),
