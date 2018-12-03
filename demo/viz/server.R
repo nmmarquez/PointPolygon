@@ -27,10 +27,11 @@ shinyServer(function(input,output){
         predList <- list(
             riemann = modelRez$pred$riemann[[input$sampling]],
             utazi = modelRez$pred$utazi[[input$sampling]],
-            resample = modelRez$pred$resample[[input$sampling]],
+            #resample = modelRez$pred$resample[[input$sampling]],
             point = modelRez$pred$point$point
         )
-        ggFieldEst(modelRez$sim, predList, sd=input$sd)
+        ggFieldEst(modelRez$sim, predList, sd=input$sd) +
+            labs(fill=ifelse(input$sd, "SD", "Probability"))
     })
     
     output$dt1 <- renderDT({

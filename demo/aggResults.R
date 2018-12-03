@@ -57,6 +57,28 @@ resultsDF %>%
   summarize(b1Cov=mean(b1Cov)) %>%
   arrange(covType, rangeE, model)
 
+resultsDF %>%
+    filter(model %in% c("riemann", "utazi")) %>%
+    mutate(Model=str_to_title(model)) %>%
+    filter(converge == 0) %>%
+    group_by(covType, rangeE, Model) %>%
+    summarize(
+        mu = mean(coverage),
+        lwr = quantile(coverage, probs=.025),
+        upr = quantile(coverage, probs=.975)
+    ) %>%
+    ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model)) +
+    geom_point() +
+    geom_errorbar() +
+    theme_classic() +
+    facet_grid(rangeE~covType) +
+    coord_flip() +
+    geom_hline(yintercept=.95, linetype=2) +
+    labs(x="Model", y="") +
+    ggtitle("95% Coverage of Underlying Probability Field") +
+    theme(panel.spacing.y = unit(0, "lines")) +
+    guides(color=FALSE)
+
 diagnosticDF <- bind_rows(
     resultsDF %>%
         mutate(b1Bias = abs(b1Bias)) %>%
