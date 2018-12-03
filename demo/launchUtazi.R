@@ -19,7 +19,7 @@ for(i in 1:nrow(paramDF)){
         "qsub", 
         "-e ~/errors/",
         "-o ~/outputs/",
-        "-l mem_free=10G -pe multi_slot 10 -P proj_geo_nodes -l geos_node=TRUE",
+        "-l mem_free=10G -pe multi_slot 10 -P proj_geo_nodes_u5m -l geos_node=TRUE",
         "-now no",
         "-N", modelname,
         "/share/singularity-images/lbd/shells/singR.sh -m 2 -o 4 -e s",

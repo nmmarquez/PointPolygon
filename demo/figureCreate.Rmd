@@ -12,7 +12,7 @@ require(gridExtra)
 require(dplyr)
 require(ggplot2)
 library(PointPolygon)
-
+library(stringr)
 
 # range of the underlying spatial process as defined 
 rangeE <- .5 # range of spatial prces varies from {.3, .5, .7}
@@ -34,7 +34,12 @@ Y_i \sim \text{Binomial}(N_i, p_i) \\
 $$
 $$
 Y_k \sim \text{Binomial}(N_k, \hat{p}_k) \\
-\text{logit}(p_i) =  \boldsymbol{\beta}\Bigg(\int_{\forall l \in \mathcal{A}_k}X_l \Bigg) + \Bigg(\int_{\forall l \in \mathcal{A}_k}\eta(s_l) \Bigg) \\
+\text{logit}(\hat{p}_k) =  \boldsymbol{\beta}\Bigg(\int_{\forall l \in \mathcal{A}_k}X_l \Bigg) + \Bigg(\int_{\forall l \in \mathcal{A}_k}\eta(s_l) \Bigg) \\
+$$
+
+$$
+Y_k \sim \text{Binomial}(N_k, \hat{p}_k) \\
+\hat{p}_k =  \int_{\forall l \in \mathcal{A}_k} \text{inv.logit}(X_l \boldsymbol{\beta} + \eta(s_l)) \\
 $$
 
 
@@ -214,4 +219,48 @@ ggplot() +
     #         mutate(val=factor("3", as.character(1:3)))) +
     guides(fill=FALSE)
 
+```
+
+```{R}
+fits <- readRDS("./range=0.5,cov=2,covtype=cluster,M=200,seed=3.Rds")
+sampling <- "rwidth_3 poly"
+predList <- list(
+            riemann = fits$pred$riemann[[sampling]],
+            utazi = fits$pred$utazi[[sampling]],
+            point = fits$pred$point$point
+        )
+field <- fits$sim
+DF <- field$spdf@data
+allDF <- DF
+allDF$Type <- "True"
+allDF$sd <- NA
+for(i in 1:length(predList)){
+    DFpred <- DF
+    DFpred$Type <- names(predList)[i]
+    DFpred$theta <- predList[[i]]$mu
+    DFpred$sd <- predList[[i]]$sd
+    allDF <- dplyr::bind_rows(allDF, DFpred)
+}
+
+new <- field
+new$spdf@data <- allDF %>%
+    mutate(Type=str_to_title(Type))
+
+ggplot(new$spdf@data, aes_string("x", "y", fill="theta")) +
+    geom_raster(alpha=.7) +
+    coord_equal() +
+    theme_void() +
+    scale_fill_distiller(palette = "Spectral") +
+    facet_wrap(~Type) +
+    labs(fill="Probability")
+
+
+new$spdf@data <- allDF[allDF$Type != "True",]
+ggplot(new$spdf@data, aes_string("x", "y", fill="sd")) +
+    geom_raster(alpha=.7) +
+    coord_equal() +
+    theme_void() +
+    scale_fill_distiller(palette = "Spectral") +
+    facet_wrap(~Type) +
+    labs(fill="SD")
 ```
