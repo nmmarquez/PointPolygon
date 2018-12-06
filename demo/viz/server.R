@@ -1,4 +1,4 @@
-.libPaths(c("~/R3.5/", .libPaths()))
+#.libPaths(c("~/R3.5/", .libPaths()))
 library(shiny)
 library(shinydashboard)
 library(ggplot2)
