@@ -82,13 +82,13 @@ Type objective_function<Type>::operator() ()
             for(int i=0; i<Npoly; i++){
                 nllPart = Type(.0);
                 for(int j=0; j<projPObs.size(); j++){
-                    Type weight = AprojPoly(j,i);
+                    Type weight = AprojPoly.coeff(j,i);
                     if(weight != Type(.0)){
                         Type p = projPObs[j];
                         nllPart += dbinom(Type(yPoly[i]), Type(denomPoly[i]), p);
                     }
                 }
-                nll -= log(sum(nllPart));
+                nll -= log(nllPart);
             }
         }
         // Redistribute points
