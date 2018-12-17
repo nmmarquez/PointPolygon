@@ -61,11 +61,8 @@ Type objective_function<Type>::operator() ()
 
     Type nll = 0.0;
 
-    // printf("%s\n", "Evaluate random effects.");
-
     SparseMatrix<Type> Q = spde_Q(log_kappa, log_tau, M0, M1, M2);
 
-    // printf("%s\n", "Evaluating likelihood of RE latent field.");
     nll += GMRF(Q)(z);
 
     vector<Type> projLatF = AprojObs * z;
@@ -74,20 +71,24 @@ Type objective_function<Type>::operator() ()
     vector<Type> projPObs = exp(projLatObs) / (Type(1.) + exp(projLatObs));
 
     for(int i=0; i<Npoint; i++){
-        // printf("Evaluating likelihood of Point %i\n", i);
         Type p = projPObs[idPoint[i]];
         nll -= dbinom(Type(yPoint[i]), Type(denomPoint[i]), p, true);
     }
 
     if(Npoly != 0){
-        // Reimann sum integration
+        // Reimann sum integration for mixture model
         if(moption == 0){
-            // printf("%s\n", "Evaluating likelihood of Polygons.");
-            SparseMatrix<Type> RAprojPoly = AprojPoly.transpose();
-            vector<Type> projPoly = RAprojPoly * projPObs;
+            Type nllPart;
             for(int i=0; i<Npoly; i++){
-                Type p = projPoly[i];
-                nll -= dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, true);
+                nllPart = Type(.0);
+                for(int j=0; j<projPObs.size(); j++){
+                    Type weight = AprojPoly(j,i);
+                    if(weight != Type(.0)){
+                        Type p = projPObs[j];
+                        nllPart += dbinom(Type(yPoly[i]), Type(denomPoly[i]), p);
+                    }
+                }
+                nll -= log(sum(nllPart));
             }
         }
         // Redistribute points
