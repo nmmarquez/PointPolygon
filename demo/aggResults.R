@@ -80,6 +80,23 @@ resultsDF %>%
     theme(panel.spacing.y = unit(0, "lines")) +
     guides(color=FALSE)
 
+resultsDF %>%
+    mutate(cov.off = abs(.95 - coverage)) %>%
+    filter(model != "point") %>%
+    filter(model %in% c("riemann", "utazi")) %>%
+    arrange(model) %>%
+    group_by(covType, covVal, rangeE, M, seed, sampling) %>%
+    summarize(
+        any.fail = sum(converge),
+        cov.off = abs(nth(cov.off, 2)) - abs(nth(cov.off, 1))
+    ) %>%
+    ungroup %>%
+    filter(any.fail == 0) %>%
+    select(cov.off) %>%
+    unlist %>%
+    (function(x) sd(x) / sqrt(length(x)))
+
+
 diagnosticFilterDF <- bind_rows(
     resultsDF %>%
         filter(sampling != "rwidth_3 poly") %>%
@@ -236,6 +253,8 @@ diagnosticDF <- bind_rows(
     mutate(upr=mu + 1.98*`st.err`)
 
 diagnosticDF %>%
+    filter(diagnostic != "Coverage") %>%
+    mutate(diagnostic=paste0(diagnostic, " Improvement")) %>%
     mutate(rangeE = as.character(rangeE)) %>%
     ggplot(aes(x=rangeE, y=mu, ymin=lwr, ymax=upr)) +
     facet_grid(covType ~ diagnostic, scales="free_x") +
@@ -261,13 +280,9 @@ diagnosticDF %>%
     ggtitle("Probability of Improved Result Using Riemann") +
     theme(panel.spacing.y = unit(0, "lines"))
 
-resultsDF %>%
-    filter(converge==0) %>%
-    group_by(sampling, model) %>% 
-    summarize(mean(b1ERR)) %>% 
-    as.data.frame
-
 diagnosticFilterDF %>%
+    filter(diagnostic != "Coverage") %>%
+    mutate(diagnostic=paste0(diagnostic, " Improvement")) %>%
     mutate(rangeE = as.character(rangeE)) %>%
     ggplot(aes(x=rangeE, y=mu, ymin=lwr, ymax=upr)) +
     facet_grid(covType ~ diagnostic, scales="free_x") +
@@ -277,7 +292,7 @@ diagnosticFilterDF %>%
     theme_classic() +
     geom_hline(yintercept=0, linetype=2) +
     labs(x="Spatial Range", y="") +
-    ggtitle("Margin of Improved Result Using Riemann") +
+    ggtitle("Margin of Improved Result Using Riemann: Polygon only 3x3 removed") +
     theme(panel.spacing.y = unit(0, "lines"))
 
 diagnosticFilterDF %>%
@@ -290,7 +305,7 @@ diagnosticFilterDF %>%
     theme_classic() +
     geom_hline(yintercept=0.5, linetype=2) +
     labs(x="Spatial Range", y="") +
-    ggtitle("Probability of Improved Result Using Riemann") +
+    ggtitle("Probability of Improved Result Using Riemann: Polygon only 3x3 removed") +
     theme(panel.spacing.y = unit(0, "lines"))
 
 aggRes <- resultsDF %>%
