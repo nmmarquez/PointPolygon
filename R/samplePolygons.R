@@ -58,7 +58,7 @@ samplePolygons <- function(field, N, M, p=1., polygonList=NULL, rWidth=NULL, ...
             id = lapply(1:N, function(x) pointsDF$id),
             trials = rep(M, N),
             obs = stats::rbinom(N, M, pointsDF[pointSamp,]$theta),
-            polyid = rep(subSPDF$polyid, N),
+            polyid = rep(subSPDF$polyid-1, N),
             trueid = pointsDF[pointSamp,]$id
         )
     })))

@@ -65,6 +65,8 @@ buildModelInputs <- function(
     }
 
     if(nrow(polyDF) > 0){
+        # hacky way of rearranging index for TMB
+        polyIDX <- as.numeric(as.factor(polyDF$polyid)) -1
         uniquePolyid <- polyDF[!duplicated(polyDF$polyid), c("id", "polyid")]
         valID <- dplyr::bind_rows(lapply(1:nrow(uniquePolyid), function(i){
             pID <- uniquePolyid$id[[i]] + 1 # have to add one for r index
@@ -80,7 +82,7 @@ buildModelInputs <- function(
             yPoly=polyDF$obs, denomPoly=polyDF$trials, covs=covs,
             M0=field$spde$param.inla$M0,M1=field$spde$param.inla$M1,
             M2=field$spde$param.inla$M2, AprojObs=field$AprojField,
-            AprojPoly=AprojPoly, moption=moption, idPoly=polyDF$polyid)
+            AprojPoly=AprojPoly, moption=moption, idPoly=polyIDX)
     }
     else{
         if(model & (moption == 0)){

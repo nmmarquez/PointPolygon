@@ -51,8 +51,6 @@ Type objective_function<Type>::operator() ()
     PARAMETER(log_kappa);
     PARAMETER_VECTOR(z);
     
-    // printf("%s\n", "Loading data complete.");
-    
     int Npoint = yPoint.size();
     int Npoly = yPoly.size();
     
@@ -76,20 +74,20 @@ Type objective_function<Type>::operator() ()
     }
     
     int intCount;
+    Type nllPart;
     
     if(Npoly != 0){
         // mixture model estimation
         if(moption == 0){
-            Type nllPart;
             for(int i=0; i<Npoly; i++){
                 nllPart = Type(.0);
-                intCount = 0;
                 for(int j=0; j<projPObs.size(); j++){
                     Type weight = AprojPoly.coeff(j,idPoly[i]);
                     if(weight != Type(.0)){
-                        intCount = intCount + 1;
                         Type p = projPObs[j];
-                        nllPart += dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, false) * weight;
+                        nllPart += dbinom(
+                            Type(yPoly[i]), 
+                            Type(denomPoly[i]), p, false) * weight;
                     }
                 }
                 nll -= log(nllPart);
@@ -112,7 +110,8 @@ Type objective_function<Type>::operator() ()
             }
         }
     }
-    
+
     REPORT(z);
     return nll;
 }
+
