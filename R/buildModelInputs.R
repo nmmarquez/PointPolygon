@@ -83,6 +83,14 @@ buildModelInputs <- function(
             M0=field$spde$param.inla$M0,M1=field$spde$param.inla$M1,
             M2=field$spde$param.inla$M2, AprojObs=field$AprojField,
             AprojPoly=AprojPoly, moption=moption, idPoly=polyIDX)
+        if(moption==3){
+            reimDF <- polyDF %>% 
+                select(-id, -trueid) %>%
+                group_by(polyid) %>% 
+                summarize_all(sum)
+            Data$denomPoly <- reimDF$trials
+            Data$yPoly <- reimDF$obs
+        }
     }
     else{
         if(model & (moption == 0)){
