@@ -5,7 +5,8 @@
 #' a given polygon and is representative of that polygon.
 #' 
 #' @param field field object which simulated underlying data
-#' @param M int, Number of trials for each polygon
+#' @param N int, number of points for each polygon
+#' @param M int, Number of trials for each point
 #' @param p numeric >0 & <=1, percentage of polygons sampled
 #' @param polygonList list, list of polygons to sample from
 #' @param rWidth integer, instead of using a polygon list divide the original
@@ -31,11 +32,11 @@
 #'         list(type="cluster", value=-2)
 #'     ))
 #'
-#' samplePolygons(unitSim, round(1200*100/9), rWidth=3)
+#' samplePolygons(unitSim, N=20, M=100, rWidth=3)
 #' 
 #' @export
 
-samplePolygons <- function(field, M, p=1., polygonList=NULL, rWidth=NULL, ...){
+samplePolygons <- function(field, N, M, p=1., polygonList=NULL, rWidth=NULL, ...){
     if(is.null(polygonList)){
         sectionedSPDF <- dividePolygon(field$bound, rWidth)
         polygonList <- lapply(1:nrow(sectionedSPDF@data), function(i){
@@ -46,24 +47,21 @@ samplePolygons <- function(field, M, p=1., polygonList=NULL, rWidth=NULL, ...){
     polySamples <- sort(sample.int(polyN, round(p*polyN), replace=F))
     sampleN <- length(polySamples)
 
-    obsDF <- data.frame(
-        id = I(lapply(1:sampleN, function(x) NA)),
-        trials = rep(M, sampleN),
-        obs = NA, 
-        polyid = NA)
-
-    i <- 0
-    for(j in polySamples){
-        i <- i + 1
+    obsDF <- as.data.frame(dplyr::bind_rows(lapply(polySamples, function(j){
         subSPDF <- polygonList[[j]]
         subSPDF$isPresent <- TRUE
         pointsDF <- cbind(sp::over(field$spdf, subSPDF), field$spdf@data)
         pointsDF <- pointsDF[!is.na(pointsDF$isPresent),]
-        obsDF$polyid[i] <- subSPDF$polyid
-        obsDF$id[[i]] <- list(ids=pointsDF$id)
-        obsDF$obs[i] <- sum(stats::rbinom(
-            M, 1, sample(pointsDF$theta, M, replace=T)))
-    }
+        pointSamp <- sample(row.names(pointsDF), N, replace=T)
+        
+        tibble::tibble(
+            id = lapply(1:N, function(x) pointsDF$id),
+            trials = rep(M, N),
+            obs = stats::rbinom(N, M, pointsDF[pointSamp,]$theta),
+            polyid = rep(subSPDF$polyid, N),
+            trueid = pointsDF[pointSamp,]$id
+        )
+    })))
 
     obsDF
 }

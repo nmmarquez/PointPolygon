@@ -16,6 +16,7 @@ Imports:
     sp,
     rgeos,
     dplyr,
+    tibble,
     arm,
     TMB,
     Matrix

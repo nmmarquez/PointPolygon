@@ -6,7 +6,7 @@
 #' replaced with representative polygon data.
 #' 
 #' @param field field object which simulated underlying data
-#' @param N int, Number of points sampled
+#' @param N int, Number of points sampled for each polygon
 #' @param M int, Number of trials for each point
 #' @param p numeric >0 & <=1, percentage of polygons sampled
 #' @param polygonList list, list of polygons to sample from
@@ -42,46 +42,17 @@
 
 samplePPMix <- function(
     field, N, M, p=.5, polygonList=NULL, rWidth=NULL, replace=TRUE, ...){
-    if(is.null(polygonList)){
-        sectionedSPDF <- dividePolygon(field$bound, rWidth)
-        polygonList <- lapply(1:nrow(sectionedSPDF@data), function(i){
-            sectionedSPDF[i,]
-        })
-    }
 
-    DF <- dplyr::sample_n(field$spdf@data, N, replace=replace)
-    DF$trials <- M
-    DF$obs <- stats::rbinom(N, size=DF$trials, prob=DF$theta)
-    DF <- DF[,c("id", "trials", "obs")]
-
-    polyN <- length(polygonList)
-    polySamples <- sort(sample.int(polyN, round(p*polyN), replace=F))
-    sampleN <- length(polySamples)
-
-    obsDF <- data.frame(
-        id = I(lapply(1:sampleN, function(x) NA)),
-        trials = rep(0, sampleN),
-        obs = 0,
-        polyid = NA)
+    obsDF <- samplePolygons(field, N, M, 1, polygonList, rWidth, replace, ...)
+    polyIDS <- unique(obsDF$polyid)
     
-    i <- 0
-    for(j in polySamples){
-        i <- i + 1
-        subSPDF <- polygonList[[j]]
-        subSPDF$isPresent <- TRUE
-        pointsDF <- cbind(sp::over(field$spdf, subSPDF), field$spdf@data)
-        pointsDF <- pointsDF[!is.na(pointsDF$isPresent),]
-        obsDF$id[[i]] <- list(ids=pointsDF$id)
-        pRemoveDF <- subset(DF, id %in% pointsDF$id)
-        mPolyTotal <- sum(pRemoveDF$trials)
-        obsDF$trials[i] <- mPolyTotal
-        obsDF$polyid[i] <- subSPDF$polyid
-        obsDF$obs[i] <- sum(stats::rbinom(
-            mPolyTotal, 1, sample(pointsDF$theta, mPolyTotal, replace=T)))
-        DF <- subset(DF, !(id %in% pointsDF$id))
-    }
+    polySamples <- sample(polyIDS, round(p*length(polyIDS)))
+    pointSamples <- setdiff(polyIDS, polySamples)
+    polyDF <- obsDF[obsDF$polyid %in% polySamples,]
+    pointDF <- obsDF[obsDF$polyid %in% pointSamples,]
+    pointDF$id <- NULL
+    pointDF$id <- pointDF$trueid
+    pointDF$trueid <- NULL
 
-    obsDF <- subset(obsDF, trials != 0)
-
-    list(pointDF=DF, polyDF=obsDF)
+    list(pointDF=pointDF, polyDF=polyDF)
 }
