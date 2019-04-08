@@ -73,18 +73,20 @@ Type objective_function<Type>::operator() ()
         nll -= dbinom(Type(yPoint[i]), Type(denomPoint[i]), p, true);
     }
     
-    int intCount;
     Type nllPart;
+    Type p;
+    
     
     if(Npoly != 0){
         // mixture model estimation
         if(moption == 0){
             for(int i=0; i<Npoly; i++){
                 nllPart = Type(.0);
-                for(int j=0; j<projPObs.size(); j++){
-                    Type weight = AprojPoly.coeff(j,idPoly[i]);
-                    Type p = projPObs[j];
-                    nllPart += dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, false) * weight;
+                for(typename SparseMatrix<Type>::InnerIterator it(AprojPoly,idPoly[i]); it; ++it){
+                    // see the following link for indexing sparse matrices
+                    // https://eigen.tuxfamily.org/dox/group__TutorialSparse.html#title2
+                    p = projPObs[it.row()];
+                    nllPart += dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, false) * it.value();
                 }
                 nll -= log(nllPart);
             }
