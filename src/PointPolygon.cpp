@@ -19,12 +19,12 @@ Type objective_function<Type>::operator() ()
     using namespace R_inla;
     using namespace density;
     using namespace Eigen;
-
+    
     // Counts of observed values
     DATA_IVECTOR(yPoint);
     DATA_IVECTOR(yPoly);
     DATA_IVECTOR(idPoint);
-
+    
     // Denoms
     DATA_IVECTOR(denomPoint);
     DATA_IVECTOR(denomPoly);
@@ -36,7 +36,7 @@ Type objective_function<Type>::operator() ()
     // Projections
     DATA_SPARSE_MATRIX(AprojObs);
     DATA_SPARSE_MATRIX(AprojPoly);
-
+    
     // SPDE objects
     DATA_SPARSE_MATRIX(M0);
     DATA_SPARSE_MATRIX(M1);
@@ -44,48 +44,52 @@ Type objective_function<Type>::operator() ()
     
     // Polygon Modeling Option
     DATA_INTEGER(moption);
-
+    
     // Parameters
     PARAMETER_VECTOR(beta);
     PARAMETER(log_tau);
     PARAMETER(log_kappa);
     PARAMETER_VECTOR(z);
-
+    
     // printf("%s\n", "Loading data complete.");
-
+    
     int Npoint = yPoint.size();
     int Npoly = yPoly.size();
-
+    
     Type tau = exp(log_tau);
     Type kappa = exp(log_kappa);
-
+    
     Type nll = 0.0;
-
+    
     SparseMatrix<Type> Q = spde_Q(log_kappa, log_tau, M0, M1, M2);
-
+    
     nll += GMRF(Q)(z);
-
+    
     vector<Type> projLatF = AprojObs * z;
     vector<Type> projCov = covs * beta;
     vector<Type> projLatObs = projLatF + projCov;
     vector<Type> projPObs = exp(projLatObs) / (Type(1.) + exp(projLatObs));
-
+    
     for(int i=0; i<Npoint; i++){
         Type p = projPObs[idPoint[i]];
         nll -= dbinom(Type(yPoint[i]), Type(denomPoint[i]), p, true);
     }
-
+    
+    int intCount;
+    
     if(Npoly != 0){
-        // Reimann sum integration for mixture model
+        // mixture model estimation
         if(moption == 0){
             Type nllPart;
             for(int i=0; i<Npoly; i++){
                 nllPart = Type(.0);
+                intCount = 0;
                 for(int j=0; j<projPObs.size(); j++){
-                    Type weight = AprojPoly.coeff(j,i);
+                    Type weight = AprojPoly.coeff(j,idPoly[i]);
                     if(weight != Type(.0)){
+                        intCount = intCount + 1;
                         Type p = projPObs[j];
-                        nllPart += dbinom(Type(yPoly[i]), Type(denomPoly[i]), p);
+                        nllPart += dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, false) * weight;
                     }
                 }
                 nll -= log(nllPart);
@@ -98,8 +102,17 @@ Type objective_function<Type>::operator() ()
                 nll -= dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, true);
             }
         }
+        if(moption == 3){
+            // Reimann sum approximation
+            SparseMatrix<Type> RAprojPoly = AprojPoly.transpose();
+            vector<Type> projPoly = RAprojPoly * projPObs;
+            for(int i=0; i<Npoly; i++){
+                Type p = projPoly[i];
+                nll -= dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, true);
+            }
+        }
     }
-
+    
     REPORT(z);
     return nll;
 }
