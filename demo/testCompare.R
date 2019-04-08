@@ -6,8 +6,8 @@ set.seed(1234)
 
 field <- simField(
     N = 500, rangeE = .7,
-    offset = c(0.1, 0.1), 
-    max.edge = c(0.05,0.2),
+    offset = c(0.1, 0.2), 
+    max.edge = c(0.1,0.2),
     beta0 = -2,
     betaList = list())
 

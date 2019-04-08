@@ -83,12 +83,8 @@ Type objective_function<Type>::operator() ()
                 nllPart = Type(.0);
                 for(int j=0; j<projPObs.size(); j++){
                     Type weight = AprojPoly.coeff(j,idPoly[i]);
-                    if(weight != Type(.0)){
-                        Type p = projPObs[j];
-                        nllPart += dbinom(
-                            Type(yPoly[i]), 
-                            Type(denomPoly[i]), p, false) * weight;
-                    }
+                    Type p = projPObs[j];
+                    nllPart += dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, false) * weight;
                 }
                 nll -= log(nllPart);
             }
