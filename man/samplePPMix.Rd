@@ -10,7 +10,7 @@ samplePPMix(field, N, M, p = 0.5, polygonList = NULL, rWidth = NULL,
 \arguments{
 \item{field}{field object which simulated underlying data}
 
-\item{N}{int, Number of points sampled}
+\item{N}{int, Number of points sampled for each polygon}
 
 \item{M}{int, Number of trials for each point}
 

@@ -19,7 +19,8 @@ Imports:
     tibble,
     arm,
     TMB,
-    Matrix
+    Matrix,
+    tmbstan
 Suggests:
     leaflet,
     tidyr,

@@ -4,13 +4,15 @@
 \alias{samplePolygons}
 \title{Take Observations from Polygons within the latent field}
 \usage{
-samplePolygons(field, M, p = 1, polygonList = NULL, rWidth = NULL,
+samplePolygons(field, N, M, p = 1, polygonList = NULL, rWidth = NULL,
   ...)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
 
-\item{M}{int, Number of trials for each polygon}
+\item{N}{int, number of points for each polygon}
+
+\item{M}{int, Number of trials for each point}
 
 \item{p}{numeric >0 & <=1, percentage of polygons sampled}
 
@@ -46,6 +48,6 @@ unitSim <- simField(
         list(type="cluster", value=-2)
     ))
 
-samplePolygons(unitSim, round(1200*100/9), rWidth=3)
+samplePolygons(unitSim, N=20, M=100, rWidth=3)
 
 }

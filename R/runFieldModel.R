@@ -13,6 +13,11 @@
 #' @param symbolic logical, use metas reordering in model fitting
 #' @param control list, control list passed to nlminb
 #' @param rWidth int, only used in moption 2 to build besag prior
+#' @param priors logical, default FALSE Should priors be evaluated for top level
+#' parameters.
+#' @param mcmc logical, default FALSE Should model be fit with MCMC. Not
+#' compatible with moption 2.
+#' @param ... Further arguments to pass to tmbstan
 #' 
 #' @return List of fitted model objects.
 #' 
@@ -48,7 +53,10 @@ runFieldModel <- function(
     verbose = FALSE,
     symbolic = TRUE,
     control = list(eval.max=1e4, iter.max=1e4),
-    rWidth = NULL){
+    rWidth = NULL,
+    priors = FALSE,
+    mcmc = FALSE,
+    ...){
     model <- "PointPolygon"
     if(is.null(polyDF)){
         moption <- 0
@@ -71,6 +79,7 @@ runFieldModel <- function(
         pointDF = pointDF,
         polyDF = polyDF,
         moption = moption)
+    inputs$Data$priors <- as.numeric(priors)
     startTime <- Sys.time()
     Obj <- TMB::MakeADFun(
         data = inputs$Data,
@@ -80,16 +89,25 @@ runFieldModel <- function(
         silent = !verbose)
     Obj$env$tracemgc <- verbose
     Obj$env$inner.control$trace <- verbose
-    if(symbolic){
-        nah <- utils::capture.output(TMB::runSymbolicAnalysis(Obj))
+    
+    if(!mcmc){
+        if(symbolic){
+            nah <- utils::capture.output(TMB::runSymbolicAnalysis(Obj))
+        }
+        Opt <- stats::nlminb(
+            start = Obj$par,
+            objective = Obj$fn,
+            gradient = Obj$gr,
+            control = control)
+        sdrep <- TMB::sdreport(Obj, getJointPrecision=TRUE)
+        runtime <- Sys.time() - startTime
     }
-    Opt <- stats::nlminb(
-        start = Obj$par,
-        objective = Obj$fn,
-        gradient = Obj$gr,
-        control = control)
-    sdrep <- TMB::sdreport(Obj, getJointPrecision=TRUE)
-    runtime <- Sys.time() - startTime
+    else{
+        inputs$Data$priors <- as.numeric(1) # priors must be used for MCMC
+        Opt <- tmbstan::tmbstan(Obj, ...)
+        sdrep <- NULL
+        runtime <- Sys.time() - startTime
+    }
 
     list(
         obj = Obj,

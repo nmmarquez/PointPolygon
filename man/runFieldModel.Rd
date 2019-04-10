@@ -6,7 +6,8 @@
 \usage{
 runFieldModel(field, pointDF = NULL, polyDF = NULL, moption = 0,
   verbose = FALSE, symbolic = TRUE, control = list(eval.max = 10000,
-  iter.max = 10000), rWidth = NULL)
+  iter.max = 10000), rWidth = NULL, priors = FALSE, mcmc = FALSE,
+  ...)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -26,6 +27,14 @@ approach.}
 \item{control}{list, control list passed to nlminb}
 
 \item{rWidth}{int, only used in moption 2 to build besag prior}
+
+\item{priors}{logical, default FALSE Should priors be evaluated for top level
+parameters.}
+
+\item{mcmc}{logical, default FALSE Should model be fit with MCMC. Not
+compatible with moption 2.}
+
+\item{...}{Further arguments to pass to tmbstan}
 }
 \value{
 List of fitted model objects.

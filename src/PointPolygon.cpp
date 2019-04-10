@@ -24,7 +24,7 @@ Type objective_function<Type>::operator() ()
     DATA_IVECTOR(yPoint);
     DATA_IVECTOR(yPoly);
     DATA_IVECTOR(idPoint);
-    
+
     // Denoms
     DATA_IVECTOR(denomPoint);
     DATA_IVECTOR(denomPoly);
@@ -36,7 +36,7 @@ Type objective_function<Type>::operator() ()
     // Projections
     DATA_SPARSE_MATRIX(AprojObs);
     DATA_SPARSE_MATRIX(AprojPoly);
-    
+
     // SPDE objects
     DATA_SPARSE_MATRIX(M0);
     DATA_SPARSE_MATRIX(M1);
@@ -44,25 +44,35 @@ Type objective_function<Type>::operator() ()
     
     // Polygon Modeling Option
     DATA_INTEGER(moption);
-    
+    // Should I Evaluate Priors? Critical for TMBstan
+    DATA_INTEGER(priors);
+
     // Parameters
     PARAMETER_VECTOR(beta);
     PARAMETER(log_tau);
     PARAMETER(log_kappa);
     PARAMETER_VECTOR(z);
-    
+
     int Npoint = yPoint.size();
     int Npoly = yPoly.size();
-    
+
     Type tau = exp(log_tau);
     Type kappa = exp(log_kappa);
-    
+
     Type nll = 0.0;
-    
+
+    if(priors == 1){
+        for(int b=0; b<beta.size(); b++){
+            nll -= dnorm(beta[b], Type(0.0), Type(100.0), true);
+        }
+        nll -= dnorm(log_tau, Type(0.0), Type(100.0), true);
+        nll -= dnorm(log_kappa, Type(0.0), Type(100.0), true);
+    }
+
     SparseMatrix<Type> Q = spde_Q(log_kappa, log_tau, M0, M1, M2);
-    
+
     nll += GMRF(Q)(z);
-    
+
     vector<Type> projLatF = AprojObs * z;
     vector<Type> projCov = covs * beta;
     vector<Type> projLatObs = projLatF + projCov;
