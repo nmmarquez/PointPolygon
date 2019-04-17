@@ -1,13 +1,14 @@
-.libPaths(c("~/R3.5/", .libPaths()))
+#.libPaths(c("~/R3.5/", .libPaths()))
 rm(list=ls())
 library(PointPolygon)
 library(dplyr)
+library(Rcpp)
 set.seed(1234)
 
 field <- simField(
-    N = 500, rangeE = .7,
+    N = 100, rangeE = .7,
     offset = c(0.1, 0.2), 
-    max.edge = c(0.1,0.2),
+    max.edge = c(0.3,0.4),
     beta0 = -2,
     betaList = list())
 
@@ -24,6 +25,10 @@ model2 <- runFieldModel(
     field, mixSample$pointDF, mixSample$polyDF, moption=3, verbose=T)
 model3 <- runFieldModel(
     field, mixSample$pointDF, mixSample$polyDF, moption=0, verbose=T)
+
+mcmcmodel1 <- runFieldModel(field, fullDF, mcmc=T, chains=1)
+mcmcmodel3 <- runFieldModel(
+    field, mixSample$pointDF, mixSample$polyDF, moption=3, mcmc=T, chains=1)
 
 # this model runs in 7 seconds
 # model2 <- runFieldModel(unitSim, mixSample$pointDF, mixSample$polyDF, moption=0)

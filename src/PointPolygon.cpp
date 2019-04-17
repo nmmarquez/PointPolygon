@@ -1,3 +1,4 @@
+#define TMB_LIB_INIT R_init_PointPolygon
 #include <TMB.hpp>
 #include <Eigen/Sparse>
 #include <vector>
