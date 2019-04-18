@@ -17,8 +17,9 @@ runFieldModel(field, pointDF = NULL, polyDF = NULL, moption = 0,
 \item{polyDF}{data simulated from samplePolygns}
 
 \item{moption}{int, intger indicating how polygon data should be estimated 0
-is by Reimann sum approximation, 1 is by redistribution, and 2 is by Utazi
-approach.}
+is by mixed model approximation, 1 is by redistribution, 2 is by Utazi
+approach, 3 is by riemman approximation, 4 is ignoring polygon data,
+5 is if all data was known.}
 
 \item{verbose}{logical, print model fitting information}
 

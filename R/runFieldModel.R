@@ -7,8 +7,9 @@
 #' @param pointDF data simulated from samplePoints
 #' @param polyDF data simulated from samplePolygns
 #' @param moption int, intger indicating how polygon data should be estimated 0
-#' is by Reimann sum approximation, 1 is by redistribution, and 2 is by Utazi
-#' approach.
+#' is by mixed model approximation, 1 is by redistribution, 2 is by Utazi
+#' approach, 3 is by riemman approximation, 4 is ignoring polygon data,
+#' 5 is if all data was known.
 #' @param verbose logical, print model fitting information
 #' @param symbolic logical, use metas reordering in model fitting
 #' @param control list, control list passed to nlminb
@@ -58,10 +59,26 @@ runFieldModel <- function(
     mcmc = FALSE,
     ...){
     model <- "PointPolygon"
+    if(moption == 1 & !is.null(polyDF)){
+        pointDF <- polyDF %>% 
+            mutate(trueid=sapply(1:nrow(.), function(i){
+                sample(polyDF$id[[i]], 1)})) %>%
+            select(-id) %>%
+            rename(id=trueid) %>%
+            bind_rows(pointDF)
+        polyDF <- NULL
+    }
     if(is.null(polyDF)){
         moption <- 0
     }
     if(moption == 2){
+        if(!is.null(polyDF)){
+            polyDF <- polyDF %>% 
+                select(-id, -trueid) %>%
+                group_by(polyid) %>% 
+                summarize_all(sum) %>%
+                as.data.frame
+        }
         fit <- runFieldModelUtazi(
             field, 
             pointDF,
@@ -74,11 +91,23 @@ runFieldModel <- function(
         
         return(fit)
     }
+    if(moption == 5){
+        moption_ <- 0
+        pointDF <- polyDF %>%
+            select(-id) %>%
+            rename(id=trueid) %>%
+            bind_rows(pointDF)
+        polyDF <- NULL
+    }
+    moption_ <- ifelse(moption == 4, 1, moption)
+    if(moption==4){
+        polyDF <- NULL
+    }
     inputs <- buildModelInputs(
         field,
         pointDF = pointDF,
         polyDF = polyDF,
-        moption = moption)
+        moption = moption_)
     inputs$Data$priors <- as.numeric(priors)
     startTime <- Sys.time()
     Obj <- TMB::MakeADFun(

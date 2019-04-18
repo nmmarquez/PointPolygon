@@ -3,15 +3,16 @@ rm(list=ls())
 library(rgeos)
 library(sp)
 library(PointPolygon)
+library(dplyr)
 
 args <- commandArgs(trailingOnly=TRUE)
 
 # for testing
-# rangeE <- .3
-# covVal <- 2
-# covType <- "random"
-# M <- as.integer(150)
-# seed <- as.integer(123)
+rangeE <- .3
+covVal <- 2
+covType <- "random"
+M <- as.integer(150)
+seed <- as.integer(123)
 
 rangeE <- as.numeric(args[1]) # range of spatial prces varies from {.3, .5, .7}
 covVal <- as.numeric(args[2]) # covariate effect in set {.2, .4, -.5, .2, -2}
@@ -43,140 +44,106 @@ unitSim <- simField(
 
 rWidthSamples <- c("3"=3, "5"=5, "10"=10)
 pointSamples <- 250
+totalTrials <- pointSamples*M
 
 # sample from only polygons
 polyDFList <- lapply(rWidthSamples, function(x){
-    samplePolygons(
-        unitSim,
-        M = round(M*100/(x^2)),
-        p = 1, # sample all polygons
-        rWidth = x)})
+    samplePerPolygon <- totalTrials / x^2
+    sampleTrailClusterRatio <- pointSamples / M
+    clustersPerPolygon <- round(sqrt(samplePerPolygon/sampleTrailClusterRatio))
+    trialPerCluster <- round(sqrt(samplePerPolygon*sampleTrailClusterRatio))
+    list(
+        polyDF=samplePolygons(
+            unitSim,
+            N = clustersPerPolygon,
+            M = trialPerCluster,
+            p = 1, # sample all polygons
+            rWidth = x),
+        pointDF=NULL)})
 
 # sample with points only
-pointDF <- samplePoints(unitSim, pointSamples, round(M*100/pointSamples))
+pointDF <- samplePoints(unitSim, pointSamples, M)
 
 # sample with mix of nonoverlapping
 mixDFList <- lapply(rWidthSamples, function(x){
-    samplePPMix(unitSim, pointSamples, round(M*100/pointSamples), rWidth=x)
-})
+    samplePerPolygon <- totalTrials / x^2
+    sampleTrailClusterRatio <- pointSamples / M
+    clustersPerPolygon <- round(sqrt(samplePerPolygon/sampleTrailClusterRatio))
+    trialPerCluster <- round(sqrt(samplePerPolygon*sampleTrailClusterRatio))
+    samplePPMix(
+        unitSim,
+        N = clustersPerPolygon,
+        M = trialPerCluster,
+        p = .5, # sample all polygons
+        rWidth = x)})
 
 # sample with mix overlapping units
-ovDFList <- lapply(rWidthSamples, function(x){
+ovDFList <- lapply(polyDFList, function(x){
+    DF <- x$polyDF
+    DF$known <- as.logical(rbinom(nrow(DF), 1, .5))
     list(
-        pointDF = samplePoints(
-            unitSim, 
-            pointSamples,
-            round(M*100/pointSamples/2)),
-        polyDF = samplePolygons(
-            unitSim,
-            M = round(M*100/(x^2)/2),
-            p = 1, # sample all polygons
-            rWidth = x)
-    )})
+        pointDF = DF %>%
+            filter(known) %>%
+            select(-id) %>%
+            rename(id=trueid) %>%
+            select(-known),
+        polyDF = DF %>%
+            filter(!known) %>%
+            select(-known)
+    )
+})
 
-# run all the models!!!
-unitModelList <- list(
-    riemann = c(
-        lapply(1:length(polyDFList), function(i){
-            runFieldModel(
-                unitSim,
-                polyDF=polyDFList[[i]], 
-                verbose=T,
-                control=list())}),
-        lapply(1:length(mixDFList), function(i){
-            runFieldModel(
-                unitSim,
-                pointDF = mixDFList[[i]]$pointDF,
-                polyDF = mixDFList[[i]]$polyDF, 
-                verbose=T,
-                control=list())}),
-        lapply(1:length(ovDFList), function(i){
-            runFieldModel(
-                unitSim,
-                pointDF = ovDFList[[i]]$pointDF,
-                polyDF = ovDFList[[i]]$polyDF, 
-                verbose=T,
-                control=list())})
-        ),
-    resample = c(
-        lapply(1:length(polyDFList), function(i){
-            runFieldModel(
-                unitSim,
-                polyDF=polyDFList[[i]], 
-                verbose=T,
-                control=list(),
-                moption=1)}),
-        lapply(1:length(mixDFList), function(i){
-            runFieldModel(
-                unitSim,
-                pointDF = mixDFList[[i]]$pointDF,
-                polyDF = mixDFList[[i]]$polyDF, 
-                verbose=T,
-                control=list(),
-                moption=1)}),
-        lapply(1:length(ovDFList), function(i){
-            runFieldModel(
-                unitSim,
-                pointDF = ovDFList[[i]]$pointDF,
-                polyDF = ovDFList[[i]]$polyDF, 
-                verbose=T,
-                control=list(),
-                moption=1)})
-        ),
-    utazi = c(
-        lapply(1:length(polyDFList), function(i){
-            runFieldModel(
-                unitSim,
-                polyDF=polyDFList[[i]], 
-                verbose=T,
-                control=list(),
-                moption=2,
-                rWidth=rWidthSamples[i])}),
-        lapply(1:length(mixDFList), function(i){
-            runFieldModel(
-                unitSim,
-                pointDF = mixDFList[[i]]$pointDF,
-                polyDF = mixDFList[[i]]$polyDF, 
-                verbose=T,
-                control=list(),
-                moption=2,
-                rWidth=rWidthSamples[i])}),
-        lapply(1:length(ovDFList), function(i){
-            runFieldModel(
-                unitSim,
-                pointDF = ovDFList[[i]]$pointDF,
-                polyDF = ovDFList[[i]]$polyDF, 
-                verbose=T,
-                control=list(),
-                moption=2,
-                rWidth=rWidthSamples[i])})
-        ),
-    point=list(point=runFieldModel(unitSim, pointDF, verbose=T, control=list()))
+allSamplesList <- list(
+    mixed=mixDFList,
+    overlap=ovDFList
 )
 
-names(unitModelList$riemann) <- paste0(
-    rep(paste0("rwidth_", rWidthSamples), 3),
-    rep(c(" poly", " mix", " ov"), each=length(rWidthSamples)))
-names(unitModelList$resample) <- paste0(
-    rep(paste0("rwidth_", rWidthSamples), 3),
-    rep(c(" poly", " mix", " ov"), each=length(rWidthSamples)))
-names(unitModelList$utazi) <- paste0(
-    rep(paste0("rwidth_", rWidthSamples), 3),
-    rep(c(" poly", " mix", " ov"), each=length(rWidthSamples)))
+models <- c(
+    "Mixed Model" = 0,
+    "Resample"    = 1,
+    "Utazi"       = 2,
+    "Reimann"     = 3,
+    "Ignore"      = 4,
+    "Known"       = 5)
 
-unitFitList <- lapply(unitModelList, function(type){
-    lapply(type, function(ffit){
-        simulateFieldCI(unitSim, ffit)})
+# run all the models!!!
+unitModelList <- lapply(models, function(i){
+    lapply(allSamplesList, function(p){
+        lapply(p, function(ps){
+            runFieldModel(
+                unitSim,
+                pointDF=ps$pointDF,
+                polyDF=ps$polyDF,
+                verbose=T,
+                control=list(),
+                moption=i
+            )
+        })
+    })
 })
 
-unitBetaList <- lapply(unitModelList, function(type){
-    lapply(type, function(ffit){
-        simulateBetas(unitSim, ffit)})
+unitFitList <- lapply(unitModelList, function(model){
+    lapply(model, function(sampleType){
+        lapply(sampleType, function(ffit){
+            simulateFieldCI(unitSim, ffit)
+        })
+    })
 })
 
-convergeList <- lapply(unitModelList, function(type){
-  lapply(type, function(ffit){
-    ffit$opt$convergence})
+unitBetaList <- lapply(unitModelList, function(model){
+    lapply(model, function(sampleType){
+        lapply(sampleType, function(ffit){
+            simulateBetas(unitSim, ffit)
+        })
+    })
+})
+
+convergeList <- lapply(unitModelList, function(model){
+    lapply(model, function(sampleType){
+        lapply(sampleType, function(ffit){
+            ffit$opt$convergence
+        })
+    })
 })
 
 unitResults <- list(
@@ -192,4 +159,4 @@ unitResults <- list(
     seed = seed
 )
 
-saveRDS(unitResults, file=paste0("~/Data/utaziTest/", modelname))
+saveRDS(unitResults, file=paste0("~/Data/utaziTest2/", modelname))

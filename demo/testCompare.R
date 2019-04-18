@@ -10,25 +10,28 @@ field <- simField(
     offset = c(0.1, 0.2), 
     max.edge = c(0.3,0.4),
     beta0 = -2,
-    betaList = list())
+    betaList = list(list(type="spatial", value=1)))
 
 ggField(field)
 
 mixSample <- samplePPMix(field, 20, 100, .5, rWidth=3)
-fullDF <- mixSample$polyDF %>%
-    select(-id) %>%
-    rename(id=trueid) %>%
-    bind_rows(mixSample$pointDF)
 
-model1 <- runFieldModel(field, fullDF, verbose = T)
-model2 <- runFieldModel(
-    field, mixSample$pointDF, mixSample$polyDF, moption=3, verbose=T)
-model3 <- runFieldModel(
+model0 <- runFieldModel(
     field, mixSample$pointDF, mixSample$polyDF, moption=0, verbose=T)
+model1 <- runFieldModel(
+    field, mixSample$pointDF, mixSample$polyDF, moption=1, verbose=T)
+model2 <- runFieldModel(
+    field, mixSample$pointDF, mixSample$polyDF, moption=2, verbose=T, rWidth = 3)
+model3 <- runFieldModel(
+    field, mixSample$pointDF, mixSample$polyDF, moption=3, verbose=T)
+model4 <- runFieldModel(
+    field, mixSample$pointDF, mixSample$polyDF, moption=4, verbose=T)
+model5 <- runFieldModel(
+    field, mixSample$pointDF, mixSample$polyDF, moption=5, verbose=T)
 
 mcmcmodel1 <- runFieldModel(field, fullDF, mcmc=T, chains=1)
 mcmcmodel3 <- runFieldModel(
-    field, mixSample$pointDF, mixSample$polyDF, moption=3, mcmc=T, chains=1)
+    field, mixSample$pointDF, mixSample$polyDF, moption=0, mcmc=T, chains=1)
 
 # this model runs in 7 seconds
 # model2 <- runFieldModel(unitSim, mixSample$pointDF, mixSample$polyDF, moption=0)

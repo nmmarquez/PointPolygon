@@ -59,10 +59,10 @@ runFieldModelUtazi <- function(
         empty <- vector("integer")
         pointDF <- data.frame(obs=empty, trials=empty, id=empty)
     }
-    
+    print("Meow1")
     shape3 <- dividePolygon(field$bound, rWidth)
     shape3@data <- dplyr::left_join(shape3@data, polyDF, by="polyid")
-    
+    print("Meow2")
     pointA <- field$AprojField[pointDF$id + 1,]
     
     grid.poly.no <- sp::over(field$spdf, shape3)$polyid
@@ -74,7 +74,7 @@ runFieldModelUtazi <- function(
         B.kappa=matrix(c(0, 0, 1),nrow=1,ncol=3),
         theta.prior.mean=c(0, log(kap.pr)),
         theta.prior.prec=c(1, 1))
-    
+    print("Meow2")
     area.poly.nb <- spdep::poly2nb(shape3, snap = 1)
     area.poly.adj <- as(spdep::nb2mat(area.poly.nb, style = "B"), "dgTMatrix")
     
@@ -99,7 +99,7 @@ runFieldModelUtazi <- function(
     areaA <- inla.spde.make.A(
         mesh=field$mesh,
         loc=mesh.coord.in,
-        block=mesh.coord.poly.no, block.rescale="sum")
+        block=mesh.coord.poly.no+1, block.rescale="sum")
     
     stack.area <- inla.stack(
         tag='areal',
@@ -118,7 +118,7 @@ runFieldModelUtazi <- function(
         A=list(field$AprojField,1,1),
         effects=list(
             s=1:field$spde$n.spde,
-            sa=grid.poly.no,
+            sa=grid.poly.no+1,
             field$spdf@data %>%
                 select(matches("V[0-9]+"))))
     if(nrow(pointDF) != 0){
@@ -137,7 +137,7 @@ runFieldModelUtazi <- function(
             A=list(pointA,1,1),
             effects=list(
                 s=1:field$spde$n.spde,
-                sa=pointAreas,
+                sa=pointAreas+1,
                 covPoint))
         
         stack.all <- inla.stack(stack.points, stack.area, stack.pred)
