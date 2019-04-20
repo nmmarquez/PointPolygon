@@ -52,15 +52,22 @@ samplePolygons <- function(field, N, M, p=1., polygonList=NULL, rWidth=NULL, ...
         subSPDF$isPresent <- TRUE
         pointsDF <- cbind(sp::over(field$spdf, subSPDF), field$spdf@data)
         pointsDF <- pointsDF[!is.na(pointsDF$isPresent),]
+        pointsDF$Bound <- NULL
         pointSamp <- sample(row.names(pointsDF), N, replace=T)
-        
-        tibble::tibble(
-            id = lapply(1:N, function(x) pointsDF$id),
-            trials = rep(M, N),
-            obs = stats::rbinom(N, M, pointsDF[pointSamp,]$theta),
-            polyid = rep(subSPDF$polyid, N),
-            trueid = pointsDF[pointSamp,]$id
-        )
+
+        miniField <- list(spdf=sp::SpatialPointsDataFrame(
+            coords=as.matrix(pointsDF[,c("x", "y")]),
+            data=pointsDF,
+            coords.nrs = numeric(0),
+            proj4string = field$spdf@proj4string
+            ))
+
+        samplePoints(miniField, N, M) %>%
+            rename(trueid=id) %>%
+            mutate(polyid=subSPDF$polyid) %>%
+            as_tibble %>%
+            mutate(id=lapply(1:N, function(x) pointsDF$id)) %>%
+            select(id, trials, obs, polyid, trueid)
     })))
 
     obsDF

@@ -16,22 +16,23 @@ ggField(field)
 
 mixSample <- samplePPMix(field, 20, 100, .5, rWidth=3)
 
-model0 <- runFieldModel(
-    field, mixSample$pointDF, mixSample$polyDF, moption=0, verbose=T)
-model1 <- runFieldModel(
-    field, mixSample$pointDF, mixSample$polyDF, moption=1, verbose=T)
-model2 <- runFieldModel(
-    field, mixSample$pointDF, mixSample$polyDF, moption=2, verbose=T, rWidth = 3)
-model3 <- runFieldModel(
-    field, mixSample$pointDF, mixSample$polyDF, moption=3, verbose=T)
-model4 <- runFieldModel(
-    field, mixSample$pointDF, mixSample$polyDF, moption=4, verbose=T)
-model5 <- runFieldModel(
-    field, mixSample$pointDF, mixSample$polyDF, moption=5, verbose=T)
+modelFits <- lapply(0:5, function(m){
+    runFieldModel(
+        field, mixSample$pointDF, mixSample$polyDF, moption=m, verbose=T,
+        rWidth = 3)
+})
+
+modelrez <- lapply(modelFits, function(x){
+    simulateFieldCI(field, x)
+})
+
+sapply(modelrez, function(df){
+    sqrt(mean((df$mu - df$trueValue)^2))
+})
 
 mcmcmodel5 <- runFieldModel(
     field, mixSample$pointDF, mixSample$polyDF, moption=5, mcmc=T, chains=1)
-mcmcmodel3 <- runFieldModel(
+mcmcmodel0 <- runFieldModel(
     field, mixSample$pointDF, mixSample$polyDF, moption=0, mcmc=T, chains=1)
 
 # this model runs in 7 seconds

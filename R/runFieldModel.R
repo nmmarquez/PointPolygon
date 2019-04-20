@@ -92,11 +92,12 @@ runFieldModel <- function(
         return(fit)
     }
     if(moption == 5){
-        moption_ <- 0
+        moption <- 0
         pointDF <- polyDF %>%
-            select(-id) %>%
+            select(-id, -polyid) %>%
             rename(id=trueid) %>%
-            bind_rows(pointDF)
+            select(id, trials, obs) %>%
+            rbind(select(pointDF, id, trials, obs))
         polyDF <- NULL
     }
     moption_ <- ifelse(moption == 4, 1, moption)
