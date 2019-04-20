@@ -14,13 +14,13 @@ for(i in 1:nrow(paramDF)){
         ",covtype=", paramDF$covType[i],
         ",M=", paramDF$M[i],
         ",seed=", paramDF$seed[i])
-
+    
     qsub <- paste(
         "qsub", 
         "-e ~/errors/",
         "-o ~/outputs/",
-        "-l mem_free=10G -pe multi_slot 10 -P proj_geo_nodes_u5m -l geos_node=TRUE",
-        "-now no",
+        "-l mem_free=20G -l m_mem_free=20G -P proj_geo_nodes_u5m",
+        "-l fthread=10 -q geospatial.q",
         "-N", modelname,
         "/share/singularity-images/lbd/shells/singR.sh -m 2 -o 4 -e s",
         "~/Documents/PointPolygon/demo/replicateUtazi.R", 
@@ -29,7 +29,7 @@ for(i in 1:nrow(paramDF)){
         paramDF$covType[i],
         paramDF$M[i],
         paramDF$seed[i],
-        
+
         sep=" ")
     
     system(qsub)

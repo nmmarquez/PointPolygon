@@ -9,12 +9,12 @@ library(stringr)
 library(tidyr)
 library(ggplot2)
 
-rdsPathList <- list.files("~/Data/utaziTest", full.names=TRUE)
+rdsPathList <- list.files("~/Data/utaziTest2/", full.names=TRUE)
 
 resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
     x <- readRDS(f_)
-    pList <- unlist(x$pred, recursive=FALSE)
-    bList <- unlist(x$betas, recursive=FALSE)
+    pList <- unlist(unlist(x$pred, recursive=FALSE), recursive=FALSE)
+    bList <- unlist(unlist(x$betas, recursive=FALSE), recursive=FALSE)
     tibble(
         covType = x$covType,
         covVal = x$covVal,
@@ -46,20 +46,24 @@ resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
         b1ERR = sapply(bList, function(b) b$betaStErr[2]),
         model = str_split(names(pList), "\\.", simplify=TRUE)[,1],
         sampling = str_split(names(pList), "\\.", simplify=TRUE)[,2],
+        polysize = str_split(names(pList), "\\.", simplify=TRUE)[,3],
         converge = unlist(x$converge))
     }, mc.cores=5))
 
 resultsDF %>%
-  mutate(b1Bias = abs(b1Bias)) %>%
-  filter(model != "point") %>%
-  filter(model %in% c("riemann", "utazi")) %>%
-  filter(converge == 0) %>%
-  group_by(covType, model, rangeE) %>%
-  summarize(b1Cov=mean(b1Cov)) %>%
-  arrange(covType, rangeE, model)
+    mutate(b1Bias = abs(b1Bias)) %>%
+    #filter(model != "point") %>%
+    #filter(model %in% c("riemann", "utazi")) %>%
+    filter(converge == 0) %>%
+    group_by(covType, model, rangeE) %>%
+    summarize(b1Cov=mean(b1Cov)) %>%
+    arrange(covType, rangeE, -b1Cov) %>%
+    group_by(covType, rangeE) %>%
+    mutate(rank=1:n()) %>%
+    as.data.frame
 
 resultsDF %>%
-    filter(model %in% c("riemann", "utazi")) %>%
+    filter(model != "Known") %>%
     mutate(Model=str_to_title(model)) %>%
     filter(converge == 0) %>%
     group_by(covType, rangeE, Model) %>%
@@ -81,9 +85,59 @@ resultsDF %>%
     guides(color=FALSE)
 
 resultsDF %>%
+    filter(model != "Known") %>%
+    mutate(Model=str_to_title(model)) %>%
+    filter(converge == 0) %>%
+    group_by(covType, rangeE, Model) %>%
+    summarize(
+        mu = mean(rmse),
+        lwr = quantile(rmse, probs=.025),
+        upr = quantile(rmse, probs=.975)
+    ) %>%
+    ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model)) +
+    geom_point() +
+    geom_errorbar() +
+    theme_classic() +
+    facet_grid(rangeE~covType) +
+    coord_flip() +
+    geom_hline(yintercept=0, linetype=2) +
+    labs(x="Model", y="") +
+    ggtitle("RMSE plots") +
+    theme(panel.spacing.y = unit(0, "lines")) +
+    guides(color=FALSE)
+
+resultsDF %>%
+    filter(model=="Utazi") %>%
+    select(covType:rmse, sampling, polysize) %>%
+    rename(rmseUtazi=rmse) %>%
+    right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
+    filter(converge == 0 & model != "Known") %>%
+    mutate(improveRatio=rmseUtazi/rmse) %>%
+    group_by(covType, model, rangeE) %>%
+    summarize(
+        mu = mean(improveRatio),
+        lwr = mean(improveRatio) - 1.96*(sd(improveRatio)/sqrt(n())),
+        upr = mean(improveRatio) + 1.96*(sd(improveRatio)/sqrt(n()))) %>%
+    ungroup %>%
+    rename(Model=model) %>%
+    mutate(txt=round(mu, 2)) %>%
+    ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
+    geom_point() +
+    geom_errorbar() +
+    theme_classic() +
+    facet_grid(rangeE~covType) +
+    coord_flip() +
+    geom_hline(yintercept=1, linetype=2) +
+    labs(x="Model", y="Relative Improvement") +
+    ggtitle("RMSE: Margin of Improvement Over Utazi Model") +
+    theme(panel.spacing.y = unit(0, "lines")) +
+    guides(color=FALSE) +
+    geom_text(nudge_y = .11)
+
+resultsDF %>%
     mutate(cov.off = abs(.95 - coverage)) %>%
-    filter(model != "point") %>%
-    filter(model %in% c("riemann", "utazi")) %>%
+    #filter(model != "point") %>%
+    #filter(model %in% c("riemann", "utazi")) %>%
     arrange(model) %>%
     group_by(covType, covVal, rangeE, M, seed, sampling) %>%
     summarize(
@@ -99,10 +153,10 @@ resultsDF %>%
 
 diagnosticFilterDF <- bind_rows(
     resultsDF %>%
-        filter(sampling != "rwidth_3 poly") %>%
+        #filter(sampling != "rwidth_3 poly") %>%
         mutate(b1Bias = abs(b1Bias)) %>%
-        filter(model != "point") %>%
-        filter(model %in% c("riemann", "utazi")) %>%
+        #filter(model != "point") %>%
+        #filter(model %in% c("riemann", "utazi")) %>%
         arrange(model) %>%
         group_by(covType, covVal, rangeE, M, seed, sampling) %>%
         summarize(

@@ -1,4 +1,4 @@
-#.libPaths(c("~/R3.5/", .libPaths()))
+.libPaths(c("~/R3.5/", .libPaths()))
 rm(list=ls())
 library(PointPolygon)
 library(dplyr)
@@ -29,7 +29,8 @@ model4 <- runFieldModel(
 model5 <- runFieldModel(
     field, mixSample$pointDF, mixSample$polyDF, moption=5, verbose=T)
 
-mcmcmodel1 <- runFieldModel(field, fullDF, mcmc=T, chains=1)
+mcmcmodel5 <- runFieldModel(
+    field, mixSample$pointDF, mixSample$polyDF, moption=5, mcmc=T, chains=1)
 mcmcmodel3 <- runFieldModel(
     field, mixSample$pointDF, mixSample$polyDF, moption=0, mcmc=T, chains=1)
 

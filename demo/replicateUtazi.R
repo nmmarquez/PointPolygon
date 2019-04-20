@@ -8,11 +8,11 @@ library(dplyr)
 args <- commandArgs(trailingOnly=TRUE)
 
 # for testing
-rangeE <- .3
-covVal <- 2
-covType <- "random"
-M <- as.integer(150)
-seed <- as.integer(123)
+# rangeE <- .3
+# covVal <- 2
+# covType <- "random"
+# M <- as.integer(150)
+# seed <- as.integer(123)
 
 rangeE <- as.numeric(args[1]) # range of spatial prces varies from {.3, .5, .7}
 covVal <- as.numeric(args[2]) # covariate effect in set {.2, .4, -.5, .2, -2}
@@ -109,14 +109,16 @@ models <- c(
 # run all the models!!!
 unitModelList <- lapply(models, function(i){
     lapply(allSamplesList, function(p){
-        lapply(p, function(ps){
+        lapply(rWidthSamples, function(np){
+            ps <- p[[as.character(np)]]
             runFieldModel(
                 unitSim,
                 pointDF=ps$pointDF,
                 polyDF=ps$polyDF,
                 verbose=T,
                 control=list(),
-                moption=i
+                moption=i,
+                rWidth=as.numeric(np)
             )
         })
     })
