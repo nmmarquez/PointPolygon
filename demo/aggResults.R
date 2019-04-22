@@ -22,6 +22,12 @@ resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
         M = x$M,
         seed = x$seed,
         rmse = sapply(pList, function(y) sqrt(mean((y$trueValue - y$mu)^2))),
+        bias = sapply(pList, function(y) mean(y$mu - y$trueValue)),
+        dissDiff = sapply(pList, function(y){
+            (.5*mean(abs(y$mu / mean(y$mu) - (1-y$mu) / mean(1-y$mu)))) - 
+                (.5*mean(abs(y$trueValue / mean(y$trueValue) - 
+                                 (1-y$trueValue) / mean(1-y$trueValue))))
+        }),
         coverage = sapply(pList, function(y){
             mean(y$trueValue >= y$lwr & y$trueValue <= y$upr)}),
         correlation = sapply(pList, function(y) cor(y$mu, y$trueValue)),
@@ -50,19 +56,9 @@ resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
         converge = unlist(x$converge))
     }, mc.cores=5))
 
-resultsDF %>%
-    mutate(b1Bias = abs(b1Bias)) %>%
-    #filter(model != "point") %>%
-    #filter(model %in% c("riemann", "utazi")) %>%
-    filter(converge == 0) %>%
-    group_by(covType, model, rangeE) %>%
-    summarize(b1Cov=mean(b1Cov)) %>%
-    arrange(covType, rangeE, -b1Cov) %>%
-    group_by(covType, rangeE) %>%
-    mutate(rank=1:n()) %>%
-    as.data.frame
+aggPlots <- list()
 
-resultsDF %>%
+aggPlots$coverage <- resultsDF %>%
     filter(model != "Known") %>%
     mutate(Model=str_to_title(model)) %>%
     filter(converge == 0) %>%
@@ -84,35 +80,13 @@ resultsDF %>%
     theme(panel.spacing.y = unit(0, "lines")) +
     guides(color=FALSE)
 
-resultsDF %>%
-    filter(model != "Known") %>%
-    mutate(Model=str_to_title(model)) %>%
-    filter(converge == 0) %>%
-    group_by(covType, rangeE, Model) %>%
-    summarize(
-        mu = mean(rmse),
-        lwr = quantile(rmse, probs=.025),
-        upr = quantile(rmse, probs=.975)
-    ) %>%
-    ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model)) +
-    geom_point() +
-    geom_errorbar() +
-    theme_classic() +
-    facet_grid(rangeE~covType) +
-    coord_flip() +
-    geom_hline(yintercept=0, linetype=2) +
-    labs(x="Model", y="") +
-    ggtitle("RMSE plots") +
-    theme(panel.spacing.y = unit(0, "lines")) +
-    guides(color=FALSE)
-
-resultsDF %>%
+aggPlots$rmseRelative <- resultsDF %>%
     filter(model=="Utazi") %>%
     select(covType:rmse, sampling, polysize) %>%
     rename(rmseUtazi=rmse) %>%
     right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
     filter(converge == 0 & model != "Known") %>%
-    mutate(improveRatio=rmseUtazi/rmse) %>%
+    mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
     group_by(covType, model, rangeE) %>%
     summarize(
         mu = mean(improveRatio),
@@ -127,277 +101,84 @@ resultsDF %>%
     theme_classic() +
     facet_grid(rangeE~covType) +
     coord_flip() +
-    geom_hline(yintercept=1, linetype=2) +
+    geom_hline(yintercept=0, linetype=2) +
     labs(x="Model", y="Relative Improvement") +
     ggtitle("RMSE: Margin of Improvement Over Utazi Model") +
     theme(panel.spacing.y = unit(0, "lines")) +
     guides(color=FALSE) +
-    geom_text(nudge_y = .11)
+    geom_text(nudge_y = .32)
 
-resultsDF %>%
-    mutate(cov.off = abs(.95 - coverage)) %>%
-    #filter(model != "point") %>%
-    #filter(model %in% c("riemann", "utazi")) %>%
-    arrange(model) %>%
-    group_by(covType, covVal, rangeE, M, seed, sampling) %>%
+aggPlots$rmseRelativeZoom <- resultsDF %>%
+    filter(model=="Utazi") %>%
+    select(covType:rmse, sampling, polysize) %>%
+    rename(rmseUtazi=rmse) %>%
+    right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
+    filter(converge == 0 & model != "Known") %>%
+    filter(model != "Ignore") %>%
+    mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
+    group_by(covType, model, rangeE) %>%
     summarize(
-        any.fail = sum(converge),
-        cov.off = abs(nth(cov.off, 2)) - abs(nth(cov.off, 1))
-    ) %>%
+        mu = mean(improveRatio),
+        lwr = mean(improveRatio) - 1.96*(sd(improveRatio)/sqrt(n())),
+        upr = mean(improveRatio) + 1.96*(sd(improveRatio)/sqrt(n()))) %>%
     ungroup %>%
-    filter(any.fail == 0) %>%
-    select(cov.off) %>%
-    unlist %>%
-    (function(x) sd(x) / sqrt(length(x)))
-
-
-diagnosticFilterDF <- bind_rows(
-    resultsDF %>%
-        #filter(sampling != "rwidth_3 poly") %>%
-        mutate(b1Bias = abs(b1Bias)) %>%
-        #filter(model != "point") %>%
-        #filter(model %in% c("riemann", "utazi")) %>%
-        arrange(model) %>%
-        group_by(covType, covVal, rangeE, M, seed, sampling) %>%
-        summarize(
-            any.fail = sum(converge),
-            b1Bias = abs(nth(b1Bias, 2)) - abs(nth(b1Bias, 1))
-        ) %>%
-        ungroup %>%
-        filter(any.fail == 0) %>%
-        mutate(riemann1 = b1Bias > 0) %>%
-        group_by(covType, rangeE) %>%
-        summarize(
-            mu = mean(b1Bias),
-            st.err = sd(b1Bias) / sqrt(n()),
-            pmu = mean(riemann1),
-            glm = list(glm(riemann1 ~ 1, family=binomial))) %>%
-        ungroup %>%
-        mutate(plwr=sapply(glm, function(g) arm::invlogit(confint(g))[1])) %>%
-        mutate(pupr=sapply(glm, function(g) arm::invlogit(confint(g))[2])) %>%
-        mutate(diagnostic="Beta Bias"),
-
-    resultsDF %>%
-        filter(sampling != "rwidth_3 poly") %>%
-        mutate(cov.off = abs(.95 - coverage)) %>%
-        filter(model != "point") %>%
-        filter(model %in% c("riemann", "utazi")) %>%
-        arrange(model) %>%
-        group_by(covType, covVal, rangeE, M, seed, sampling) %>%
-        summarize(
-            any.fail = sum(converge),
-            cov.off = abs(nth(cov.off, 2)) - abs(nth(cov.off, 1))
-        ) %>%
-        ungroup %>%
-        filter(any.fail == 0) %>%
-        mutate(riemann1 = cov.off > 0) %>%
-        group_by(covType, rangeE) %>%
-        summarize(
-            mu = mean(cov.off),
-            st.err = sd(cov.off) / sqrt(n()),
-            pmu = mean(riemann1),
-            glm = list(glm(riemann1 ~ 1, family=binomial))) %>%
-        ungroup %>%
-        mutate(plwr=sapply(glm, function(g) arm::invlogit(confint(g))[1])) %>%
-        mutate(pupr=sapply(glm, function(g) arm::invlogit(confint(g))[2])) %>%
-        mutate(diagnostic="Coverage"),
-
-    resultsDF %>%
-        filter(sampling != "rwidth_3 poly") %>%
-        filter(model != "point") %>%
-        filter(model %in% c("riemann", "utazi")) %>%
-        arrange(model) %>%
-        group_by(covType, covVal, rangeE, M, seed, sampling) %>%
-        summarize(
-            any.fail = sum(converge),
-            rmse = nth(rmse, 2) - nth(rmse, 1)
-        ) %>%
-        ungroup %>%
-        filter(any.fail == 0) %>%
-        mutate(riemann1 = rmse > 0) %>%
-        group_by(covType, rangeE) %>%
-        summarize(
-            mu = mean(rmse),
-            st.err = sd(rmse) / sqrt(n()),
-            pmu = mean(riemann1),
-            glm = list(glm(riemann1 ~ 1, family=binomial))) %>%
-        ungroup %>%
-        mutate(diagnostic="RMSE")) %>%
-    ungroup %>%
-    mutate(plwr=sapply(glm, function(g) arm::invlogit(confint(g))[1])) %>%
-    mutate(pupr=sapply(glm, function(g) arm::invlogit(confint(g))[2])) %>%
-    select(-glm) %>%
-    mutate(lwr=mu - 1.98*`st.err`) %>%
-    mutate(upr=mu + 1.98*`st.err`)
-
-diagnosticDF <- bind_rows(
-    resultsDF %>%
-        mutate(b1Bias = abs(b1Bias)) %>%
-        filter(model != "point") %>%
-        filter(model %in% c("riemann", "utazi")) %>%
-        arrange(model) %>%
-        group_by(covType, covVal, rangeE, M, seed, sampling) %>%
-        summarize(
-            any.fail = sum(converge),
-            b1Bias = abs(nth(b1Bias, 2)) - abs(nth(b1Bias, 1))
-        ) %>%
-        ungroup %>%
-        filter(any.fail == 0) %>%
-        mutate(riemann1 = b1Bias > 0) %>%
-        group_by(covType, rangeE) %>%
-        summarize(
-            mu = mean(b1Bias),
-            st.err = sd(b1Bias) / sqrt(n()),
-            pmu = mean(riemann1),
-            glm = list(glm(riemann1 ~ 1, family=binomial))) %>%
-        ungroup %>%
-        mutate(plwr=sapply(glm, function(g) arm::invlogit(confint(g))[1])) %>%
-        mutate(pupr=sapply(glm, function(g) arm::invlogit(confint(g))[2])) %>%
-        mutate(diagnostic="Beta Bias"),
-    
-    resultsDF %>%
-        mutate(cov.off = abs(.95 - coverage)) %>%
-        filter(model != "point") %>%
-        filter(model %in% c("riemann", "utazi")) %>%
-        arrange(model) %>%
-        group_by(covType, covVal, rangeE, M, seed, sampling) %>%
-        summarize(
-            any.fail = sum(converge),
-            cov.off = abs(nth(cov.off, 2)) - abs(nth(cov.off, 1))
-        ) %>%
-        ungroup %>%
-        filter(any.fail == 0) %>%
-        mutate(riemann1 = cov.off > 0) %>%
-        group_by(covType, rangeE) %>%
-        summarize(
-            mu = mean(cov.off),
-            st.err = sd(cov.off) / sqrt(n()),
-            pmu = mean(riemann1),
-            glm = list(glm(riemann1 ~ 1, family=binomial))) %>%
-        ungroup %>%
-        mutate(plwr=sapply(glm, function(g) arm::invlogit(confint(g))[1])) %>%
-        mutate(pupr=sapply(glm, function(g) arm::invlogit(confint(g))[2])) %>%
-        mutate(diagnostic="Coverage"),
-    
-    resultsDF %>%
-        filter(model != "point") %>%
-        filter(model %in% c("riemann", "utazi")) %>%
-        arrange(model) %>%
-        group_by(covType, covVal, rangeE, M, seed, sampling) %>%
-        summarize(
-            any.fail = sum(converge),
-            rmse = nth(rmse, 2) - nth(rmse, 1)
-        ) %>%
-        ungroup %>%
-        filter(any.fail == 0) %>%
-        mutate(riemann1 = rmse > 0) %>%
-        group_by(covType, rangeE) %>%
-        summarize(
-            mu = mean(rmse),
-            st.err = sd(rmse) / sqrt(n()),
-            pmu = mean(riemann1),
-            glm = list(glm(riemann1 ~ 1, family=binomial))) %>%
-        ungroup %>%
-        mutate(diagnostic="RMSE")) %>%
-    ungroup %>%
-    mutate(plwr=sapply(glm, function(g) arm::invlogit(confint(g))[1])) %>%
-    mutate(pupr=sapply(glm, function(g) arm::invlogit(confint(g))[2])) %>%
-    select(-glm) %>%
-    mutate(lwr=mu - 1.98*`st.err`) %>%
-    mutate(upr=mu + 1.98*`st.err`)
-
-diagnosticDF %>%
-    filter(diagnostic != "Coverage") %>%
-    mutate(diagnostic=paste0(diagnostic, " Improvement")) %>%
-    mutate(rangeE = as.character(rangeE)) %>%
-    ggplot(aes(x=rangeE, y=mu, ymin=lwr, ymax=upr)) +
-    facet_grid(covType ~ diagnostic, scales="free_x") +
+    rename(Model=model) %>%
+    mutate(txt=round(mu, 2)) %>%
+    ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
     geom_point() +
     geom_errorbar() +
-    coord_flip() +
     theme_classic() +
+    facet_grid(rangeE~covType) +
+    coord_flip() +
     geom_hline(yintercept=0, linetype=2) +
-    labs(x="Spatial Range", y="") +
-    ggtitle("Margin of Improved Result Using Riemann") +
-    theme(panel.spacing.y = unit(0, "lines"))
+    labs(x="Model", y="Relative Improvement") +
+    ggtitle("RMSE: Margin of Improvement Over Utazi Model") +
+    theme(panel.spacing.y = unit(0, "lines")) +
+    guides(color=FALSE) +
+    geom_text(nudge_y = .1)
 
-diagnosticDF %>%
-    mutate(rangeE = as.character(rangeE)) %>%
-    ggplot(aes(x=rangeE, y=pmu, ymin=plwr, ymax=pupr)) +
-    facet_grid(covType ~ diagnostic, scales="free_x") +
-    geom_point() +
-    geom_errorbar() +
-    coord_flip() +
-    theme_classic() +
-    geom_hline(yintercept=0.5, linetype=2) +
-    labs(x="Spatial Range", y="") +
-    ggtitle("Probability of Improved Result Using Riemann") +
-    theme(panel.spacing.y = unit(0, "lines"))
-
-diagnosticFilterDF %>%
-    filter(diagnostic != "Coverage") %>%
-    mutate(diagnostic=paste0(diagnostic, " Improvement")) %>%
-    mutate(rangeE = as.character(rangeE)) %>%
-    ggplot(aes(x=rangeE, y=mu, ymin=lwr, ymax=upr)) +
-    facet_grid(covType ~ diagnostic, scales="free_x") +
-    geom_point() +
-    geom_errorbar() +
-    coord_flip() +
-    theme_classic() +
-    geom_hline(yintercept=0, linetype=2) +
-    labs(x="Spatial Range", y="") +
-    ggtitle("Margin of Improved Result Using Riemann: Polygon only 3x3 removed") +
-    theme(panel.spacing.y = unit(0, "lines"))
-
-diagnosticFilterDF %>%
-    mutate(rangeE = as.character(rangeE)) %>%
-    ggplot(aes(x=rangeE, y=pmu, ymin=plwr, ymax=pupr)) +
-    facet_grid(covType ~ diagnostic, scales="free_x") +
-    geom_point() +
-    geom_errorbar() +
-    coord_flip() +
-    theme_classic() +
-    geom_hline(yintercept=0.5, linetype=2) +
-    labs(x="Spatial Range", y="") +
-    ggtitle("Probability of Improved Result Using Riemann: Polygon only 3x3 removed") +
-    theme(panel.spacing.y = unit(0, "lines"))
-
-aggRes <- resultsDF %>%
-    filter(model %in% c("riemann", "utazi")) %>%
-    arrange(model) %>%
-    group_by(covType, covVal, rangeE, M, seed, sampling) %>%
+aggPlots$bias <- resultsDF %>%
+    filter(converge == 0 & model != "Known") %>%
+    group_by(covType, model, rangeE) %>%
     summarize(
-        rmseDiff = diff(rmse),
-        covDiff = diff(coverage),
-        b1Bias = diff(abs(b1Bias)),
-        converge = sum(converge)) %>%
-    filter(converge == 0)
-
-aggRes %>%
+        mu = mean(bias),
+        lwr = quantile(bias, probs=.025),
+        upr = quantile(bias, probs=.975)) %>%
     ungroup %>%
-    select(rmseDiff, covDiff) %>%
-    gather("key", "value") %>%
-    group_by(key) %>%
-    ggplot(aes(value)) +
-    geom_density() +
+    rename(Model=model) %>%
+    mutate(txt=round(mu, 2)) %>%
+    ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
+    geom_point() +
+    geom_errorbar() +
     theme_classic() +
-    facet_wrap(~key, scales = "free")
+    facet_grid(rangeE~covType) +
+    coord_flip() +
+    geom_hline(yintercept=0, linetype=2) +
+    labs(x="Model", y="Bias") +
+    ggtitle("RMSE: Average Bias of Models") +
+    theme(panel.spacing.y = unit(0, "lines")) +
+    guides(color=FALSE)
 
-table(resultsDF$covType)
-aggResDF <- resultsDF %>%
-    filter(converge == 0 & model != "point") %>%
-    group_by(sampling, covType, rangeE, model) %>%
+aggPlots$dissDiff <- resultsDF %>%
+    filter(converge == 0 & model != "Known") %>%
+    group_by(covType, model, rangeE) %>%
     summarize(
-      mean(coverage), 
-      min(coverage), 
-      mean(rmse), 
-      max(rmse),
-      mean(correlation),
-      min(correlation),
-      `mean(b0)`=mean(b0Cov, na.rm=T),
-      `mean(b1)`=mean(b1Cov, na.rm=T)) %>%
-    as.data.frame %>%
-    arrange(covType, rangeE, sampling, -`mean(coverage)`)
+        mu = mean(dissDiff),
+        lwr = quantile(dissDiff, probs=.025),
+        upr = quantile(dissDiff, probs=.975)) %>%
+    ungroup %>%
+    rename(Model=model) %>%
+    mutate(txt=round(mu, 2)) %>%
+    ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
+    geom_point() +
+    geom_errorbar() +
+    theme_classic() +
+    facet_grid(rangeE~covType) +
+    coord_flip() +
+    geom_hline(yintercept=0, linetype=2) +
+    labs(x="Model", y="Bias") +
+    ggtitle("Dissimilarity Difference") +
+    theme(panel.spacing.y = unit(0, "lines")) +
+    guides(color=FALSE)
 
-write_csv(aggResDF, "~/Data/utaziResults/aggRes.csv")
-write_csv(resultsDF, "~/Data/utaziResults/results.csv")
+write_rds(aggPlots, "~/Documents/PointPolygon/demo/aggplots.Rds")

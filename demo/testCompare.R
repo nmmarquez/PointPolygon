@@ -14,12 +14,12 @@ field <- simField(
 
 ggField(field)
 
-mixSample <- samplePPMix(field, 20, 100, .5, rWidth=3)
+mixSample <- samplePPMix(field, 40, 100, .5, rWidth=5)
 
 modelFits <- lapply(0:5, function(m){
     runFieldModel(
         field, mixSample$pointDF, mixSample$polyDF, moption=m, verbose=T,
-        rWidth = 3)
+        rWidth = 5)
 })
 
 modelrez <- lapply(modelFits, function(x){
@@ -38,9 +38,7 @@ mcmcmodel0 <- runFieldModel(
 # this model runs in 7 seconds
 # model2 <- runFieldModel(unitSim, mixSample$pointDF, mixSample$polyDF, moption=0)
 # 
-modelPredList <- lapply(list(model1, model2, model3), function(x){
-    simulateFieldCI(field, x)
-})
+
 
 ggFieldEst(field, modelPredList)
 ggFieldEst(field, modelPredList, sd = T)

@@ -1,0 +1,10 @@
+---
+output: html_document
+---
+
+# Updates on Using Areal Data in Continous SPDE models  
+
+This document details ongoing changes in the use of areal data alongside geospatially located data in the form of point coordinates. The primary strategy for data collection that we will focus on is the scenario where we sample $N$ clusters(locations) where the exact location is known and $M$ clusters where the location can be attributed to a partuclar areal location but not a specific coordinate in space specfically for binomial data. This scenario reflects a common scenario in survey data where the Demographic and Health Survey (DHS) will report data with geo-coordinates given while the Multiple Indicator Cluster Survey (MICS) which collects data on similar health outcomes will only report that data came from some cluster sampled from a given areal unit. 
+
+```{r}
+```
