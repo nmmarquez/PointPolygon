@@ -41,6 +41,11 @@ unitSim <- simField(
     offset = c(0.1, 0.2),
     max.edge = c(0.05,0.2))
 
+# note that we may potentially want to change these tests so that it reflects a
+# pixel count and mesh node number similar to IHME u5m tests. For example in
+# brazil we have the following dimensions
+# full proj raster: 1e+06
+# mesh nodes: 988
 
 rWidthSamples <- c("3"=3, "5"=5, "10"=10)
 pointSamples <- 250
