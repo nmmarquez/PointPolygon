@@ -5,7 +5,10 @@ Version: 0.1.0
 Author: Neal Marquez
 Maintainer: Neal Marquez <nmmarquez@gmail.com>
 Description: Evaluate Point and Polygon Data Simulatneously
-Depends: R (>= 3.4.0)
+Depends: 
+    R (>= 3.4.0),
+    dplyr,
+    sf
 LinkingTo: TMB, RcppEigen
 Imports:
     INLA,
@@ -14,6 +17,7 @@ Imports:
     raster,
     rgdal,
     sp,
+    sf,
     rgeos,
     dplyr,
     tibble,

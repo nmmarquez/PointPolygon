@@ -7,10 +7,11 @@
 #' @param field field object which simulated underlying data
 #' @param N int, number of points for each polygon
 #' @param M int, Number of trials for each point
+#' @param times vector of int, times to sample from
 #' @param p numeric >0 & <=1, percentage of polygons sampled
 #' @param polygonList list, list of polygons to sample from
 #' @param rWidth integer, instead of using a polygon list divide the original
-#' bounding box into approximately equal sized squares with rWidth number 
+#' bounding box into approximately equal sized squares with rWidth number
 #' squares along the x axis.
 #' @param ... further argumnets for compatibility 
 #' 
@@ -36,11 +37,15 @@
 #' 
 #' @export
 
-samplePolygons <- function(field, N, M, p=1., polygonList=NULL, rWidth=NULL, ...){
+samplePolygons <- function(
+    field, N, M, times=NULL, p=1., polygonList=NULL, rWidth=NULL, ...){
     if(is.null(polygonList)){
+        if(is.null(rWidth)){
+            stop("rWidth and polygonList can not both be NULL")
+        }
         sectionedSPDF <- dividePolygon(field$bound, rWidth)
         polygonList <- lapply(1:nrow(sectionedSPDF@data), function(i){
-            sectionedSPDF[i,]
+            sf::st_as_sf(sectionedSPDF[i,])
         })
     }
     polyN <- length(polygonList)
@@ -50,25 +55,22 @@ samplePolygons <- function(field, N, M, p=1., polygonList=NULL, rWidth=NULL, ...
     obsDF <- as.data.frame(dplyr::bind_rows(lapply(polySamples, function(j){
         subSPDF <- polygonList[[j]]
         subSPDF$isPresent <- TRUE
-        pointsDF <- cbind(sp::over(field$spdf, subSPDF), field$spdf@data)
-        pointsDF <- pointsDF[!is.na(pointsDF$isPresent),]
-        pointsDF$Bound <- NULL
-        pointSamp <- sample(row.names(pointsDF), N, replace=T)
+        pointsDF <- cbind(
+            isPresent=sapply(sf::st_intersects(field$spdf,subSPDF), function(z){
+                length(z)>0}), 
+            field$spdf) %>%
+            filter(isPresent)
 
-        miniField <- list(spdf=sp::SpatialPointsDataFrame(
-            coords=as.matrix(pointsDF[,c("x", "y")]),
-            data=pointsDF,
-            coords.nrs = numeric(0),
-            proj4string = field$spdf@proj4string
-            ))
+        miniField <- list(spdf=pointsDF)
 
-        samplePoints(miniField, N, M) %>%
-            rename(trueid=id) %>%
-            mutate(polyid=subSPDF$polyid) %>%
-            as_tibble %>%
-            mutate(id=lapply(1:N, function(x) pointsDF$id)) %>%
-            select(id, trials, obs, polyid, trueid)
+        samplePoints(miniField, N, M, times=times) %>%
+            dplyr::rename(trueid=id) %>%
+            dplyr::mutate(polyid=subSPDF$polyid) %>%
+            dplyr::as_tibble() %>%
+            dplyr::mutate(id=lapply(1:N, function(x) pointsDF$id)) %>%
+            dplyr::select(id, tidx, trials, obs, polyid, trueid)
     })))
 
     obsDF
 }
+

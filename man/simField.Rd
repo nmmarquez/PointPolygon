@@ -4,8 +4,9 @@
 \alias{simField}
 \title{Simulate A continous 2D spatial field using SPDE}
 \usage{
-simField(N = 60, sigmaE = 1, rangeE = 0.3, shape = NULL,
-  beta0 = 0, betaList = list(), link = arm::invlogit, ...)
+simField(N = 60, sigmaE = 1, rangeE = 0.3, rho = 0.95,
+  shape = NULL, nTimes = 1, beta0 = 0, betaList = list(),
+  link = arm::invlogit, ...)
 }
 \arguments{
 \item{N}{Number of width pixels for the projection}
@@ -14,7 +15,11 @@ simField(N = 60, sigmaE = 1, rangeE = 0.3, shape = NULL,
 
 \item{rangeE}{spatial range}
 
+\item{rho}{temporal autocorrelation for AR1 process}
+
 \item{shape}{polygon object to populate, if NULL unit square is used}
+
+\item{nTimes}{number of time observations}
 
 \item{beta0}{itercept term added to all points}
 

@@ -8,7 +8,9 @@
 #' @param N Number of width pixels for the projection
 #' @param sigmaE spatial variance
 #' @param rangeE spatial range
+#' @param rho temporal autocorrelation for AR1 process
 #' @param shape polygon object to populate, if NULL unit square is used
+#' @param nTimes number of time observations
 #' @param beta0 itercept term added to all points
 #' @param betaList list of 2 item lists with a type item which is either random,
 #' cluster, or spatial and a value item which is the beta coefficient.
@@ -75,7 +77,7 @@
 #'
 #' @export
 
-simField <- function(N=60, sigmaE=1, rangeE=.3, shape=NULL, 
+simField <- function(N=60, sigmaE=1, rangeE=.3, rho=.95, shape=NULL, nTimes=1,
                      beta0=0, betaList=list(), link=arm::invlogit, ...){
     if(is.null(shape)){
         shape <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(
@@ -94,53 +96,69 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, shape=NULL,
         proj4string = shape@proj4string)
 
     validIndex <- !is.na(sp::over(shapeExtPointsDF, shape)$isPresent)
-    shapePointsDF <- shapeExtPointsDF[validIndex,]
+    shapePointsGDF <- sf::st_as_sf(shapeExtPointsDF[validIndex,])
     mesh <- INLA::inla.mesh.2d(loc=bbCoords(shape), ...)
-    AprojField <- INLA::inla.spde.make.A(mesh=mesh, loc=shapePointsDF)
+    AprojField <- INLA::inla.spde.make.A(mesh=mesh, loc=sf::st_coordinates(shapePointsGDF))
+    
+    shapePointsDF <- do.call(sf:::rbind.sf, (lapply(1:nTimes, function(i){
+        shapePointsGDF %>%
+            mutate(tidx=i-1)}))) %>%
+        mutate(id=rep((1:nrow(shapePointsGDF)) - 1, nTimes))
 
     kappaE <- sqrt(8) / rangeE
     tauE <- 1/(sqrt(4*pi)*kappaE*sigmaE)
     spde <- INLA::inla.spde2.matern(mesh)
-    Q <- tauE**2 * (kappaE**4 * spde$param.inla$M0 +
-                        2 * kappaE**2 *spde$param.inla$M1 + spde$param.inla$M2)
-    x_ <- as.vector(ar.matrix::sim.AR(n=1, Q))
+    sQ <- tauE**2 * (kappaE**4 * spde$param.inla$M0 +
+                         2 * kappaE**2 *spde$param.inla$M1 + spde$param.inla$M2)
+    if(nTimes > 1){
+        tQ <- ar.matrix::Q.AR1(nTimes, sigma=1, rho=rho)
+        x_ <- as.vector(ar.matrix::sim.AR(n=1, kronecker(tQ, sQ)))
+    }
+    else{
+        x_ <- as.vector(ar.matrix::sim.AR(n=1, sQ))
+    }
     x <- x_ - mean(x_)
-    N <- nrow(shapePointsDF@data)
+    xMat <- matrix(x, nrow=ncol(AprojField), ncol=nTimes)
+    N2 <- nrow(shapePointsDF)
     betaVec <- beta0
-    covMat <- matrix(1, nrow=N)
     shapePointsDF$V0 <- 1
     i <- 0
     for(covb in betaList){
         i <- i + 1
         betaVec <- c(betaVec, covb$value)
         if(covb$type == "spatial"){
-            cov_ <- as.vector(ar.matrix::sim.AR(n=1, Q))
+            if(nTimes > 1){
+                cov_ <- as.vector(ar.matrix::sim.AR(n=1, kronecker(tQ, sQ)))
+            }
+            else{
+                cov_ <- as.vector(ar.matrix::sim.AR(n=1, sQ))
+            }
             cov <- cov_ - mean(cov_)
-            newCov <- as.numeric(AprojField %*% cov)
+            covMat <- matrix(cov, nrow=ncol(AprojField), ncol=nTimes)
+            newCov <- as.numeric(AprojField %*% covMat)
         }
         else if(covb$type == "cluster"){
-            suppressWarnings(clusters <- stats::kmeans(
-                shapePointsDF@coords, centers = 10, iter.max = 1))
-            newCov <- stats::runif(10)[clusters$cluster]
+            newCov <- c()
+            for(j in 1:nTimes){
+                suppressWarnings(clusters <- stats::kmeans(
+                    sf::st_coordinates(shapePointsGDF), centers = 10, iter.max = 1))
+                newCov <- c(newCov, stats::runif(10)[clusters$cluster])
+            }
         }
         else{
-            newCov <- stats::runif(N)
+            newCov <- stats::runif(N2)
         }
-        shapePointsDF@data[,paste0("V", i)] <- newCov
+        shapePointsDF[[paste0("V", i)]] <- newCov
     }
-    shapePointsDF$z <- as.numeric(AprojField %*% x)
+    shapePointsDF$z <- as.numeric(AprojField %*% xMat)
     if(i == 0){
         shapePointsDF$theta <- link(beta0 + shapePointsDF$z)
     }
     else{
-        shapePointsDF$theta <- link(c(
-            as.matrix(shapePointsDF@data[,paste0("V", 0:i)]) %*% betaVec) + 
-                shapePointsDF$z)
+        matX <- as.matrix(as_tibble(shapePointsDF)[,paste0("V", 0:i)])
+        shapePointsDF$theta <- link(c(matX %*% betaVec) + shapePointsDF$z)
     }
 
-    shapePointsDF$id <- (1:nrow(shapePointsDF@data)) - 1
-
-    shapePointsDF$Bound <- 1
     boundShape <- rgeos::gUnaryUnion(shape, id=shape@data$Bound)
     boundShape <- sp::SpatialPolygonsDataFrame(boundShape,
             data.frame(
@@ -154,7 +172,8 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, shape=NULL,
         bound = boundShape,
         AprojField = AprojField,
         spde = spde,
-        betas = c(beta0, sapply(betaList, function(b) b$value)))
+        betas = c(beta0, sapply(betaList, function(b) b$value)),
+        nTimes = nTimes)
     class(field) <- "field"
     field
 }

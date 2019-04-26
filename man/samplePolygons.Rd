@@ -4,8 +4,8 @@
 \alias{samplePolygons}
 \title{Take Observations from Polygons within the latent field}
 \usage{
-samplePolygons(field, N, M, p = 1, polygonList = NULL, rWidth = NULL,
-  ...)
+samplePolygons(field, N, M, times = NULL, p = 1, polygonList = NULL,
+  rWidth = NULL, ...)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -13,6 +13,8 @@ samplePolygons(field, N, M, p = 1, polygonList = NULL, rWidth = NULL,
 \item{N}{int, number of points for each polygon}
 
 \item{M}{int, Number of trials for each point}
+
+\item{times}{vector of int, times to sample from}
 
 \item{p}{numeric >0 & <=1, percentage of polygons sampled}
 

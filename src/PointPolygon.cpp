@@ -132,7 +132,7 @@ Type objective_function<Type>::operator() ()
             SparseMatrix<Type> RAprojPoly = AprojPoly.transpose();
             matrix<Type> projPoly = RAprojPoly * projPObs;
             for(int i=0; i<Npoly; i++){
-                p = projPoly(i,idtPoly[i]);
+                p = projPoly(idPoly[i],idtPoly[i]);
                 nll -= dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, true);
             }
         }

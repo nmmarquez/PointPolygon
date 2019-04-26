@@ -8,6 +8,7 @@
 #' @param field field object which simulated underlying data
 #' @param N int, Number of points sampled for each polygon
 #' @param M int, Number of trials for each point
+#' @param times vector of int, times to sample from
 #' @param p numeric >0 & <=1, percentage of polygons sampled
 #' @param polygonList list, list of polygons to sample from
 #' @param rWidth integer, instead of using a polygon list divide the original
@@ -34,16 +35,17 @@
 #'         list(type="cluster", value=-2)
 #'     ))
 #'
-#' mixSample <- samplePPMix(unitSim, 30, 150, .5, rWidth=3)
+#' mixSample <- samplePPMix(unitSim, 30, 150, p=.5, rWidth=3)
 #' head(mixSample$pointDF)
 #' head(mixSample$polyDF)
 #' 
 #' @export
 
 samplePPMix <- function(
-    field, N, M, p=.5, polygonList=NULL, rWidth=NULL, replace=TRUE, ...){
+    field, N, M, times=NULL, p=.5, polygonList=NULL, rWidth=NULL, replace=TRUE, ...){
 
-    obsDF <- samplePolygons(field, N, M, 1, polygonList, rWidth, replace, ...)
+    obsDF <- samplePolygons(
+        field, N, M, times=times, p=1, polygonList, rWidth, replace, ...)
     polyIDS <- unique(obsDF$polyid)
     
     polySamples <- sample(polyIDS, round(p*length(polyIDS)))
