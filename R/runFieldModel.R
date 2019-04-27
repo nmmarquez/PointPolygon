@@ -72,12 +72,8 @@ runFieldModel <- function(
         moption <- 0
     }
     if(moption == 2){
-        if(!is.null(polyDF)){
-            polyDF <- polyDF %>% 
-                select(-id, -trueid) %>%
-                group_by(polyid) %>% 
-                summarize_all(sum) %>%
-                as.data.frame
+        if(field$nTimes > 1){
+            stop("Utazi Model Only Supports Single Year Analysis Currently.")
         }
         fit <- runFieldModelUtazi(
             field, 
@@ -96,11 +92,11 @@ runFieldModel <- function(
         pointDF <- polyDF %>%
             select(-id, -polyid) %>%
             rename(id=trueid) %>%
-            select(id, trials, obs) %>%
-            rbind(select(pointDF, id, trials, obs))
+            select(id, tidx, trials, obs) %>%
+            rbind(select(pointDF, id, tidx, trials, obs))
         polyDF <- NULL
     }
-    moption_ <- ifelse(moption == 4, 1, moption)
+    moption_ <- ifelse(moption == 4, 0, moption)
     if(moption==4){
         polyDF <- NULL
     }
@@ -114,6 +110,7 @@ runFieldModel <- function(
     Obj <- TMB::MakeADFun(
         data = inputs$Data,
         parameters = inputs$Params,
+        map=inputs$Map,
         DLL = model,
         random = "z",
         silent = !verbose)

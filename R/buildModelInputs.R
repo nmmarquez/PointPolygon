@@ -45,6 +45,7 @@ buildModelInputs <- function(
         pointDF <- data.frame(obs=empty, trials=empty, id=empty, tidx=empty)
     }
 
+    pointDF <- dplyr::arrange(pointDF, id)
     idx <- pointDF$id + 1 # have to add one for r index
     covDF <- dplyr::select(dplyr::as_tibble(field$spdf), dplyr::matches("V[0-9]+"))
 
@@ -109,7 +110,7 @@ buildModelInputs <- function(
         AprojPoly <- Matrix::Matrix(data=0, nrow=0, ncol=0, sparse=TRUE)
         Data <- list(
             yPoint=pointDF$obs, denomPoint=pointDF$trials,
-            idPoint=0:(nrow(pointDF) - 1),
+            idPoint=as.numeric(as.factor(pointDF$id)) - 1,
             yPoly=polyDF$obs, denomPoly=polyDF$trials, covs=covs,
             M0=field$spde$param.inla$M0,M1=field$spde$param.inla$M1,
             M2=field$spde$param.inla$M2, AprojObs=AprojObs,
@@ -118,10 +119,18 @@ buildModelInputs <- function(
     }
 
     Params <- list(
-        beta=0*(1:ncol(covDF)), log_tau=0, log_kappa=0, 
-        z=array(0, dim=c(field$mesh$n, field$nTimes)),
-        logit_rho=0
+        beta=0*(1:ncol(covDF)), log_tau=0, log_kappa=0, logit_rho=0, 
+        z=array(0, dim=c(field$mesh$n, field$nTimes))
     )
+    
+    if(!model){
+        Data$covs <- as.matrix(covDF)
+    }
 
-    return(list(Data=Data, Params=Params))
+    Map <- list()
+    if(field$nTimes == 1){
+        Map[["logit_rho"]] <- as.factor(NA)
+    }
+
+    return(list(Data=Data, Params=Params, Map=Map))
 }

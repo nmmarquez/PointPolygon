@@ -173,6 +173,11 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, rho=.95, shape=NULL, nTimes=1,
         AprojField = AprojField,
         spde = spde,
         betas = c(beta0, sapply(betaList, function(b) b$value)),
+        fieldPars = c(
+            log_tau = log(tauE),
+            log_kappa = log(kappaE),
+            logit_rho = arm::logit(rho)
+        ),
         nTimes = nTimes)
     class(field) <- "field"
     field

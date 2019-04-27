@@ -35,6 +35,9 @@
 
 simulateFieldCI <- function(field, modelFit, draws=1000){
     if(modelFit$moption == 2){
+        if(field$nTimes > 1){
+            stop("Utazi Model Only Supports Single Year Analysis Currently.")
+        }
         post.samples <- inla.posterior.sample(1000, modelFit)
         index.pred <- inla.stack.index(modelFit$stack, "pred")$data
         pSamples <- arm::invlogit(sapply(post.samples, function(z){
@@ -60,10 +63,14 @@ simulateFieldCI <- function(field, modelFit, draws=1000){
     
     betaDraws <- parDraws[betaRows,]
     zDraws <- parDraws[zRows,]
-    
-    fieldProbs <- arm::invlogit(
-        modelLRP$Data$covs %*% betaDraws + modelLRP$Data$AprojObs %*% zDraws)
-    
+    nNod <- field$mesh$n
+
+    fieldProbs <- arm::invlogit(modelLRP$Data$covs %*% betaDraws +
+        do.call(rbind, lapply(1:field$nTimes, function(i){
+            as.matrix(
+                modelLRP$Data$AprojObs %*% zDraws[((i-1)*nNod + 1):(i*nNod),])
+        })))
+
     data.frame(
         mu = apply(fieldProbs, 1, mean),
         sd = apply(fieldProbs, 1, stats::sd),

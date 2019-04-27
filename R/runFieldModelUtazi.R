@@ -59,14 +59,19 @@ runFieldModelUtazi <- function(
         empty <- vector("integer")
         pointDF <- data.frame(obs=empty, trials=empty, id=empty)
     }
-    print("Meow1")
+    
+    polyDF <- polyDF %>% 
+        select(-id, -trueid) %>%
+        group_by(polyid) %>% 
+        summarize_all(sum) %>%
+        as.data.frame
+
     shape3 <- dividePolygon(field$bound, rWidth)
     shape3@data <- dplyr::left_join(shape3@data, polyDF, by="polyid")
-    print("Meow2")
     pointA <- field$AprojField[pointDF$id + 1,]
     
-    grid.poly.no <- sp::over(field$spdf, shape3)$polyid
-    ran.pr <- as.numeric(summary(dist(field$spdf@coords))[3])
+    grid.poly.no <- sp::over(as(field$spdf, "Spatial"), shape3)$polyid
+    ran.pr <- as.numeric(summary(dist(sf::st_coordinates(field$spdf)))[3])
     kap.pr <- sqrt(8)/ran.pr
     spde.model <- INLA::inla.spde2.matern(
         mesh=field$mesh, alpha=2,
@@ -74,20 +79,23 @@ runFieldModelUtazi <- function(
         B.kappa=matrix(c(0, 0, 1),nrow=1,ncol=3),
         theta.prior.mean=c(0, log(kap.pr)),
         theta.prior.prec=c(1, 1))
-    print("Meow2")
+    
     area.poly.nb <- spdep::poly2nb(shape3, snap = 1)
     area.poly.adj <- as(spdep::nb2mat(area.poly.nb, style = "B"), "dgTMatrix")
     
     # extract covariate values for polygons
-    covPoly <- field$spdf@data %>%
+    covPoly <- field$spdf %>%
+        dplyr::as_tibble() %>%
         select(matches("V[0-9]+")) %>%
         mutate(polyid=grid.poly.no) %>%
         group_by(polyid) %>%
         summarise_all(mean, na.rm=T)
     
-    covPoint <- field$spdf@data %>%
-        right_join(pointDF) %>%
-        select(matches("V[0-9]+")) %>%
+    covPoint <- field$spdf %>%
+        dplyr::as_tibble() %>%
+        dplyr::select(-geometry) %>%
+        dplyr::right_join(pointDF) %>%
+        dplyr::select(dplyr::matches("V[0-9]+")) %>%
         as.data.frame
     
     mesh.coord.in <-
@@ -113,17 +121,19 @@ runFieldModelUtazi <- function(
     stack.pred <- inla.stack(
         tag='pred',
         data=list(
-            y=rep(NA, nrow(field$spdf@data)),
-            n=rep(NA, nrow(field$spdf@data))),
+            y=rep(NA, nrow(field$spdf)),
+            n=rep(NA, nrow(field$spdf))),
         A=list(field$AprojField,1,1),
         effects=list(
             s=1:field$spde$n.spde,
             sa=grid.poly.no+1,
-            field$spdf@data %>%
-                select(matches("V[0-9]+"))))
+            field$spdf %>%
+                dplyr::as_tibble() %>%
+                dplyr::select(dplyr::matches("V[0-9]+")) %>%
+                as.data.frame))
     if(nrow(pointDF) != 0){
         pointAreas <- pointDF %>%
-            left_join(field$spdf@data) %>%
+            dplyr::left_join(dplyr::as_tibble(field$spdf)) %>%
             select(x, y) %>%
             SpatialPoints %>%
             over(shape3) %>%

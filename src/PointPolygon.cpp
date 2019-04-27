@@ -54,8 +54,8 @@ Type objective_function<Type>::operator() ()
     PARAMETER_VECTOR(beta);
     PARAMETER(log_tau);
     PARAMETER(log_kappa);
-    PARAMETER_ARRAY(z);
     PARAMETER(logit_rho);
+    PARAMETER_ARRAY(z);
 
     int Npoint = yPoint.size();
     int Npoly = yPoly.size();
@@ -95,6 +95,7 @@ Type objective_function<Type>::operator() ()
             }
         }
     }
+
     matrix<Type> projLatObs = projLatF + projCov;
     matrix<Type> projPObs = projLatObs.array().exp() / (Type(1.) + projLatObs.array().exp());
 
@@ -139,5 +140,7 @@ Type objective_function<Type>::operator() ()
     }
 
     REPORT(z);
+    REPORT(projLatObs);
+    REPORT(projPObs);
     return nll;
 }
