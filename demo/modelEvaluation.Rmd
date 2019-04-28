@@ -1,10 +1,141 @@
 ---
-output: html_document
+output: 
+    bookdown::html_document2:
+        includes:
+            in_header: assets/huskyheader.html
+            before_body: assets/huskynavbar.html
+        fig_caption: yes
 ---
 
-# Updates on Using Areal Data in Continous SPDE models  
+# Updates on Using Areal Data in Continous SPDE models {-}  
 
 This document details ongoing changes in the use of areal data alongside geospatially located data in the form of point coordinates. The primary strategy for data collection that we will focus on is the scenario where we sample $N$ clusters(locations) where the exact location is known and $M$ clusters where the location can be attributed to a partuclar areal location but not a specific coordinate in space specfically for binomial data. This scenario reflects a common scenario in survey data where the Demographic and Health Survey (DHS) will report data with geo-coordinates given while the Multiple Indicator Cluster Survey (MICS) which collects data on similar health outcomes will only report that data came from some cluster sampled from a given areal unit. 
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    echo=FALSE, warning=FALSE, message=FALSE)
+```
+
 ```{r}
+library(PointPolygon)
+library(tidyverse)
+library(sp)
+
+set.seed(123)
+
+unitSim <- simField(
+    N = 100, # use 60 squares as base field just as in example
+    sigmaE = 1, # unit variance for spde process
+    rangeE = .3,
+    shape = NULL, # null shape which by default creates unit square
+    beta0 = -2, # intercept
+    betaList = list(list(type="spatial", value=1.5)), 
+    link = arm::invlogit,
+    offset = c(0.1, 0.2),
+    max.edge = c(0.05,0.2))
+
+fieldPlot <- ggField(unitSim) +
+    labs(fill="Probability", title="Continuous Probability of Event Field")
+
+mixList <- samplePPMix(unitSim, N = 5, M = 20, rWidth=5)
+polyList <- samplePolygons(unitSim, N = 5, M = 20, rWidth=5)
+
+mixPlot <- mixList$polyDF %>%
+    select(-id) %>%
+    rename(id=trueid) %>%
+    select(trials, obs, polyid, id) %>%
+    mutate(locKnown=FALSE) %>%
+    rbind(mutate(mixList$pointDF, locKnown=TRUE)) %>%
+    select(id, locKnown) %>%
+    right_join(unitSim$spdf@data) %>%
+    ggplot(aes(x=x, y=y, fill=locKnown)) +
+    geom_raster() +
+    theme_classic() +
+    scale_fill_discrete(na.value="white") +
+    geom_vline(xintercept=seq(0, 1, .2)) +
+    geom_hline(yintercept=seq(0, 1, .2)) +
+    coord_equal() +
+    scale_x_continuous(limits=c(0, 1), expand = c(0, 0)) +
+    scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+    theme_void() +
+    labs(fill="Geolocated")
+
+ovPlot <- polyList %>%
+    select(id=trueid) %>%
+    mutate(locKnown=as.logical(rbinom(n(), 1, .5))) %>%
+    right_join(unitSim$spdf@data) %>%
+    ggplot(aes(x=x, y=y, fill=locKnown)) +
+    geom_raster() +
+    theme_classic() +
+    scale_fill_discrete(na.value="white") +
+    geom_vline(xintercept=seq(0, 1, .2)) +
+    geom_hline(yintercept=seq(0, 1, .2)) +
+    coord_equal() +
+    scale_x_continuous(limits=c(0, 1), expand = c(0, 0)) +
+    scale_y_continuous(limits=c(0, 1), expand = c(0, 0)) +
+    theme_void() +
+    labs(fill="Geolocated")
+```
+
+# Motivating Example
+
+Say that we are interested in the spatial field of the probability of some outcome $X$ and how that probability is corelated over space we can imagine some field that may look as that seen in Figure \@ref(fig:field). The probability of some event differs over space and is created using a transformation of an additive linear model whic will be described at length in a later section, however, is correlated in space. The probability of an event can be estimated by observing bernoulli trials that take place at a particular location and if events are spatially correlated we may leverage spatial correlation models to estimate the entire field based on relatively limited number of observations.  
+
+```{r field, fig.cap="Spatial Probability Field"}
+fieldPlot
+```
+
+Much of the time, however, the exact location of an observation point is not known, but rather we know an area from which a point comes from. In this motivating example we will divide our field above into 25 areal units such that the grid is divided up into a 5x5 surface. From within each areal unit we sample 5 clusters however, for some areal units we do not know the exact location of the sample and for others we do. An example of this can be seen in Figure \@ref(fig:mix) where the blue pixels represent known location clusters hile the red pixels are only known up to the smaller areal box that they reside in.
+
+```{r mix, fig.cap="Mixed Sampling"}
+mixPlot
+```
+
+Another example we can imagine is the case when known cluster locations and unknown cluster locations are taken from within the same areal unit. An example of this is seen in Figure \@ref(fig:ov). An assumption that we make about each of these sampling strategies is that the clusters are selected at random and/or are representative of the larger areal unit that they were drawn from.
+
+```{r ov, fig.cap="Mixed Sampling"}
+ovPlot
+```
+
+# Modeling Approach  
+
+Most traditional modeling approaches can handle data that comes in the form of geolocated point data or non-overlapping areal data but not both. Here we describe a method for which we can incoporate both data that is geolocated as well as cluster data that comes from a known area but whose exact location is unknown. We will begin with the traditional SPDE model where data is geolocated. For this model we have a set of clusters $\boldsymbol{s}$ which come from a spatial field. The exact simulation of the entire field shown in Figure \@ref{fig:field} is then 
+
+$$
+\begin{align*}
+Y_{\boldsymbol{s}_i} &\sim \text{Binomial}(p_{\boldsymbol{s}_i}, M_{i}) \\
+\text{logit}(p_{\boldsymbol{s}_i}) &= \beta_0 + \beta_1 X_{\boldsymbol{s}_i} + g(\boldsymbol{s}_i) \\
+g &\sim \mathcal{GP}(\boldsymbol{0}, \mathcal{M}(\kappa, \tau))
+\end{align*}
+$$
+
+This formulation allows us to make estimates and evaluate the likelihood at any point on the field and is described in depth in Lindgren et al 2011. This model only works, however, if we know the exact location of all the points. If we don not know the exact location for all the point but only that the data comes from some Area $\mathcal{A}_{\boldsymbol{s}_i}$ then we must take a different approach. In this case, let us imagine that instead of a continous field we have a suffencietly small discritized field such that the entire field is now a raster of smaller areas and each area $\mathcal{A}_{\boldsymbol{s}_i}$ also consists of a finite number of rasters. If we know that a cluster comes from area $\mathcal{A}_{\boldsymbol{s}_i}$ then we may say that the data must come from one of the rasters within $\mathcal{A}_{\boldsymbol{s}_i}$ and have that value of $p$ associated with that raster. In this case the likelihood of this data should be the following mixture model. Where $q_{\boldsymbol{s}_j}$ is the probability of coming from a particular raster within $\mathcal{A}_i$ and $j \in \mathcal{A}_i$ denotes all rasters $j$ within the area $\mathcal{A}_i$.
+
+$$
+\begin{align*}
+Y_{\boldsymbol{s}_i|\mathcal{A}_i} &\sim 
+\sum_{j \in \mathcal{A}_i}
+\text{Binomial}(p_{\boldsymbol{s}_j}, M_{i}) \times 
+q_{\boldsymbol{s}_j}
+\end{align*}
+$$
+
+In order to test this approach we compare this mixture model to other models presented such as the Utazi model from Utazi 2018, distributing the points at random via resampling as done in IHME 2018, ignoring the non-geolocated points altogether, as well as a Riemann sum approximation for areal points described in earlier work. 
+
+### Simulation Variation
+
+See other document for now.
+
+## Results
+```{r coverage, fig.cap="Coverage Plot"}
+resultsPlots <- read_rds("./aggplots.Rds")
+resultsPlots$coverage
+```
+
+```{r rmse1, fig.cap="Rmse Plot"}
+resultsPlots$rmseRelative
+```
+
+```{r rmse2, fig.cap="Rmse Plot"}
+resultsPlots$rmseRelativeZoom
 ```
