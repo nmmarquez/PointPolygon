@@ -14,7 +14,7 @@ field <- simField(
 
 ggField(field)
 
-mixSample <- samplePPMix(field, 40, 100, .5, rWidth=5)
+mixSample <- samplePPMix(field, 40, 100, p=.5, rWidth=5)
 
 modelFits <- lapply(0:5, function(m){
     runFieldModel(
