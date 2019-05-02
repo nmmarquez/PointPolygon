@@ -41,6 +41,44 @@ sapply(modelrez, function(df){
     sqrt(mean((df$mu - df$trueValue)^2))
 })
 
+arealrez <- lapply(modelFits, function(x){
+    arealCI(field, x, rWidth=10)
+})
+
+# Confidence intervals for pixels
+sapply(modelrez, function(x){
+    mean(x$trueValue > x$lwr & x$trueValue < x$upr)
+})
+
+sapply(modelrez, function(x){
+    mean(abs(x$upr - x$lwr))
+})
+
+# Confidence intervals for areal units
+sapply(arealrez, function(x){
+    mean(x$trueValue > x$lwr & x$trueValue < x$upr)
+})
+
+sapply(arealrez, function(x){
+    mean(abs(x$upr - x$lwr))
+})
+
+ggplot() + 
+    geom_sf(
+        data = arealrez$Riemann %>%
+            mutate(covered=lwr < trueValue & upr > trueValue),
+        aes(fill = covered)) +
+    facet_wrap(~tidx) +
+    #ggplot2::scale_fill_distiller(palette = "Spectral") +
+    theme_classic()
+
+ggplot() + 
+    geom_sf(data = arealrez$Known, aes(fill = trueValue)) +
+    facet_wrap(~tidx) +
+    ggplot2::scale_fill_distiller(palette = "Spectral") +
+    theme_void() +
+    
+
 ggFieldEst(field, modelrez)
 ggFieldEst(field, modelrez, sd = T)
 

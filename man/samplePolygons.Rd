@@ -21,7 +21,7 @@ samplePolygons(field, N, M, times = NULL, p = 1, polygonList = NULL,
 \item{polygonList}{list, list of polygons to sample from}
 
 \item{rWidth}{integer, instead of using a polygon list divide the original
-bounding box into approximately equal sized squares with rWidth number 
+bounding box into approximately equal sized squares with rWidth number
 squares along the x axis.}
 
 \item{...}{further argumnets for compatibility}
