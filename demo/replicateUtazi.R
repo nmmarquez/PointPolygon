@@ -156,7 +156,7 @@ convergeList <- lapply(unitModelList, function(model){
 timeList <- lapply(unitModelList, function(model){
     lapply(model, function(sampleType){
         lapply(sampleType, function(ffit){
-            as.numeric(ffit$`Mixture Model`$runtime, units="mins")
+            as.numeric(ffit$runtime, units="mins")
         })
     })
 })

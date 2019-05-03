@@ -1,5 +1,6 @@
 .libPaths(c("~/R3.5/", .libPaths()))
 rm(list=ls())
+library(GGally)
 library(tibble)
 library(dplyr)
 library(parallel)
@@ -9,7 +10,8 @@ library(stringr)
 library(tidyr)
 library(ggplot2)
 
-rdsPathList <- list.files("~/Data/utaziTest2/", full.names=TRUE)
+
+rdsPathList <- list.files("~/Data/utaziTest3/", full.names=TRUE)
 
 resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
     x <- readRDS(f_)
@@ -53,13 +55,14 @@ resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
         model = str_split(names(pList), "\\.", simplify=TRUE)[,1],
         sampling = str_split(names(pList), "\\.", simplify=TRUE)[,2],
         polysize = str_split(names(pList), "\\.", simplify=TRUE)[,3],
-        converge = unlist(x$converge))
+        converge = unlist(x$converge),
+        runtime = unlist(x$runtime))
     }, mc.cores=5))
 
 aggPlots <- list()
 
 aggPlots$coverage <- resultsDF %>%
-    filter(model != "Known") %>%
+    #filter(model != "Known") %>%
     mutate(Model=str_to_title(model)) %>%
     filter(converge == 0) %>%
     group_by(covType, rangeE, Model) %>%
@@ -85,7 +88,7 @@ aggPlots$rmseRelative <- resultsDF %>%
     select(covType:rmse, sampling, polysize) %>%
     rename(rmseUtazi=rmse) %>%
     right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
-    filter(converge == 0 & model != "Known") %>%
+    filter(converge == 0) %>%
     mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
     group_by(covType, model, rangeE) %>%
     summarize(
@@ -113,7 +116,7 @@ aggPlots$rmseRelativeZoom <- resultsDF %>%
     select(covType:rmse, sampling, polysize) %>%
     rename(rmseUtazi=rmse) %>%
     right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
-    filter(converge == 0 & model != "Known") %>%
+    filter(converge == 0) %>%
     filter(model != "Ignore") %>%
     mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
     group_by(covType, model, rangeE) %>%
@@ -138,7 +141,7 @@ aggPlots$rmseRelativeZoom <- resultsDF %>%
     geom_text(nudge_y = .1)
 
 aggPlots$bias <- resultsDF %>%
-    filter(converge == 0 & model != "Known") %>%
+    filter(converge == 0) %>%
     group_by(covType, model, rangeE) %>%
     summarize(
         mu = mean(bias),
@@ -160,7 +163,7 @@ aggPlots$bias <- resultsDF %>%
     guides(color=FALSE)
 
 aggPlots$dissDiff <- resultsDF %>%
-    filter(converge == 0 & model != "Known") %>%
+    filter(converge == 0) %>%
     group_by(covType, model, rangeE) %>%
     summarize(
         mu = mean(dissDiff),
@@ -180,5 +183,30 @@ aggPlots$dissDiff <- resultsDF %>%
     ggtitle("Dissimilarity Difference") +
     theme(panel.spacing.y = unit(0, "lines")) +
     guides(color=FALSE)
+
+pm <- resultsDF %>%
+    group_by(covType, covVal, rangeE, M, seed, sampling, polysize) %>%
+    mutate(groupC=all(converge == 0)) %>%
+    filter(groupC) %>%
+    ungroup %>%
+    select(covType, covVal, rangeE, M, seed, sampling, polysize, 
+           model, runtime) %>%
+    spread("model", "runtime") %>%
+    mutate(model=1:n()) %>%
+    select(Ignore:Utazi) %>%
+    ggpairs(aes(alpha=.1), lower=list(continuous="density")) +
+    theme_classic()
+
+pm2 <- pm
+for(i in 2:pm$nrow) {
+    for(j in 1:(i-1)) {
+        pm2[i,j] <- pm[i,j] +
+            scale_x_continuous(limits = c(0, 10)) +
+            scale_y_continuous(limits = c(0, 10)) +
+            geom_abline(color="red", linetype=2)
+    }
+}
+
+pm2
 
 write_rds(aggPlots, "~/Documents/PointPolygon/demo/aggplots.Rds")
