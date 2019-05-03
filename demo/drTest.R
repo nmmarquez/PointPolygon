@@ -3,6 +3,7 @@ library(tidyverse)
 library(PointPolygon)
 library(sp)
 library(Rcpp)
+library(Matrix)
 set.seed(12345)
 setwd("~/Documents/PointPolygon/")
 sourceCpp("./demo/dist.cpp")
@@ -47,7 +48,8 @@ yearWDF <- yearWDF %>%
     rename(oldid=id) %>%
     mutate(tidx=year-min(year)) %>%
     left_join(select(fullDF, oldid, id), by="oldid") %>%
-    select(-year, -oldid)
+    select(-year, -oldid) %>%
+    arrange(id)
 
 syearWDF <- filter(yearWDF, tidx == 14)
 
@@ -80,6 +82,9 @@ polyDF <- polyDF %>%
     left_join(locDF, by="strat") %>%
     mutate(polyid=as.numeric(as.factor(strat))-1) %>%
     select(id, tidx, trials, obs, polyid, trueid, strat)
+
+stratOrder <- arrange(
+    as.data.frame(unique(select(polyDF, polyid, strat))), polyid)
 
 pointDF <- pointDF %>%
     rename(oldid=id) %>%
@@ -124,6 +129,15 @@ ihmePolyDF <- read_csv("./demo/ihmeResampleDF.csv") %>%
     mutate(polyid=as.numeric(as.factor(trueid))-1) %>%
     select(id, tidx, trials, obs, polyid, trueid) %>%
     arrange(tidx, polyid)
+
+AprojPoly <- syearWDF %>%
+    left_join(stratOrder, by="strat") %>%
+    mutate(col=polyid+1, row=id+1) %>%
+    {sparseMatrix(
+        i = .$row,
+        j = .$col,
+        x = .$popW,
+        dims = c(max(.$row), max(.$col)))}
 
 ### The approaches that we want to test are as follows
 # 1 Mixture model

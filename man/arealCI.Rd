@@ -45,7 +45,7 @@ pointDF <- samplePoints(unitSim, 500, 100)
 
 unitFit <- runFieldModel(unitSim, pointDF)
 
-head(simulateFieldCI(unitSim, unitFit, rWidth=3))
+head(arealCI(unitSim, unitFit, rWidth=3))
 
 }
 
