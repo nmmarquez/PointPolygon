@@ -9,6 +9,7 @@
 *.Rout
 *.rda
 *.csv
+*.old
 
 # Example code in package build process
 *-Ex.R

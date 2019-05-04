@@ -1,13 +1,41 @@
+.libPaths(c("~/R3.5/", .libPaths()))
 rm(list=ls())
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(stringr)
 library(PointPolygon)
 library(sp)
 library(Rcpp)
 library(Matrix)
-set.seed(12345)
 setwd("~/Documents/PointPolygon/")
 sourceCpp("./demo/dist.cpp")
 load("./demo/prepData.rda")
+
+nT <- 6
+
+args <- commandArgs(trailingOnly=TRUE)
+
+# for testing
+# rangeE <- .3
+# covVal <- 2
+# covType <- "random"
+# M <- as.integer(150)
+# seed <- as.integer(123)
+
+rangeE <- as.numeric(args[1]) # range of spatial prces varies from {.2, .4, .6}
+covVal <- as.numeric(args[2]) # covariate effect in set {.2, .4, -.5, .2, -2}
+covType <- args[3] # either random spatial or cluster 
+seed <- as.integer(args[4]) # RNG
+
+modelname <- paste0(
+    "range=", rangeE,
+    ",cov=", covVal,
+    ",covtype=", covType,
+    ",seed=", seed, ".Rds"
+)
+
+set.seed(seed)
 
 find_closest <- function(x1, x2) {
     
@@ -27,12 +55,12 @@ find_closest <- function(x1, x2) {
 }
 
 field <- simField(
-    N = as.matrix(select(fullDF, long, lat)), rangeE = .4,
+    N = as.matrix(select(fullDF, long, lat)), rangeE = rangeE,
     offset = c(0.1, 0.2),
-    max.edge = c(0.1,0.2),
+    max.edge = c(0.18,0.2),
     beta0 = -2,
-    #betaList = list(list(type="spatial", value=1)),
-    nTimes = 15,
+    betaList = list(list(type=covType, value=covVal)),
+    nTimes = nT,
     rho = .85, shape=spDF)
 
 ggField(field)
@@ -46,12 +74,13 @@ fullDF <- fullDF %>%
 
 yearWDF <- yearWDF %>%
     rename(oldid=id) %>%
-    mutate(tidx=year-min(year)) %>%
+    mutate(tidx=year-max(year)-1+nT) %>%
     left_join(select(fullDF, oldid, id), by="oldid") %>%
     select(-year, -oldid) %>%
-    arrange(id)
+    arrange(id) %>%
+    filter(tidx>=0)
 
-syearWDF <- filter(yearWDF, tidx == 14)
+syearWDF <- filter(yearWDF, tidx == max(tidx))
 
 locDF <- syearWDF %>%
     group_by(strat) %>%
@@ -67,7 +96,8 @@ psuDF <- polyDF %>%
     }))
 
 polyDF <- polyDF %>%
-    mutate(tidx=year-min(year)) %>%
+    mutate(tidx=year-max(year)-1+nT) %>%
+    filter(tidx>=0) %>%
     group_by(psu, tidx) %>%
     summarize(trials=sum(N)) %>%
     ungroup %>%
@@ -75,7 +105,7 @@ polyDF <- polyDF %>%
     rename(id=trueid) %>%
     # lets do constant population for now
     left_join(
-        select(filter(as_tibble(field$spdf), tidx==14), theta, id),
+        select(filter(as_tibble(field$spdf), tidx==max(tidx)), theta, id),
         by = c("id")) %>%
     mutate(obs=rbinom(n(), trials, prob=theta)) %>%
     rename(trueid=id) %>%
@@ -88,7 +118,8 @@ stratOrder <- arrange(
 
 pointDF <- pointDF %>%
     rename(oldid=id) %>%
-    mutate(tidx=year-min(year)) %>%
+    mutate(tidx=year-max(year)-1+nT) %>%
+    filter(tidx>=0) %>%
     left_join(select(fullDF, oldid, id), by="oldid") %>%
     left_join(
         select(as_tibble(field$spdf), theta, id, tidx),
@@ -146,22 +177,51 @@ AprojPoly <- syearWDF %>%
 # 4 Ignore
 # 5 Known
 
-# TODO: We need to pass a custom projection matrixc toaccount for the correct pop weights
-
 modelList <- list(
     `Mixture Model` = runFieldModel(
-        field, pointDF, polyDF, moption=0, verbose=T
+        field, pointDF, polyDF, moption=0, verbose=T, AprojPoly=AprojPoly 
     ),
     `IHME Resample` = runFieldModel(
-        field, pointDF, ihmePolyDF, moption=5, verbose=T
+        field, pointDF, ihmePolyDF, moption=5, verbose=T, AprojPoly=AprojPoly
     ),
-    `Mixture Model` = runFieldModel(
-        field, pointDF, polyDF, moption=3, verbose=T
+    `Riemann` = runFieldModel(
+        field, pointDF, select(polyDF, -strat), moption=3, verbose=T, AprojPoly=AprojPoly
     ),
-    `Mixture Model` = runFieldModel(
-        field, pointDF, polyDF, moption=4, verbose=T
+    `Ignore` = runFieldModel(
+        field, pointDF, polyDF, moption=4, verbose=T, AprojPoly=AprojPoly
     ),
-    `Mixture Model` = runFieldModel(
-        field, pointDF, polyDF, moption=5, verbose=T
+    `Known` = runFieldModel(
+        field, pointDF, polyDF, moption=5, verbose=T, AprojPoly=AprojPoly
     )
 )
+
+unitFitList <- lapply(modelList, function(model){
+    simulateFieldCI(field, model)
+})
+
+unitBetaList <- lapply(modelList, function(model){
+    simulateBetas(field, model)
+})
+
+convergeList <- lapply(modelList, function(model){
+    model$opt$convergence
+})
+
+timeList <- lapply(modelList, function(model){
+    as.numeric(model$runtime, units="mins")
+})
+
+unitResults <- list(
+    sim = field,
+    pred = unitFitList,
+    betas = unitBetaList,
+    # model = modelList, # this takes up a lot of space so ignore for now
+    converge = convergeList,
+    covType = covType,
+    rangeE = rangeE,
+    covVal = covVal,
+    seed = seed,
+    runtime = timeList
+)
+
+saveRDS(unitResults, file=paste0("~/Data/spaceTimeTest/", modelname))
