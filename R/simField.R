@@ -83,27 +83,39 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, rho=.95, shape=NULL, nTimes=1,
         shape <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(
             matrix(c(0,1,1,0,0,0,1,1), ncol=2))), 1)))
     }
-    bb <- shape@bbox
+    shape@data$Bound <- 1
     shape$isPresent <- TRUE
-    baseRaster <- raster::raster(
-        ncols=N, nrows=round(N*hRatio(shape)), 
-        xmn=bb[1,1], xmx=bb[1,2], ymn=bb[2,1], ymx=bb[2,2], 
-        crs=shape@proj4string)
-    shapeRaster <- raster::rasterize(shape, baseRaster, field=1)
-    shapeExtPointsDF <- sp::SpatialPointsDataFrame(
-        sp::coordinates(shapeRaster),
-        data=as.data.frame(sp::coordinates(shapeRaster)),
-        proj4string = shape@proj4string)
-
-    validIndex <- !is.na(sp::over(shapeExtPointsDF, shape)$isPresent)
-    shapePointsGDF <- sf::st_as_sf(shapeExtPointsDF[validIndex,])
+    if(class(N) != "matrix"){
+        bb <- shape@bbox
+        baseRaster <- raster::raster(
+            ncols=N, nrows=round(N*hRatio(shape)), 
+            xmn=bb[1,1], xmx=bb[1,2], ymn=bb[2,1], ymx=bb[2,2], 
+            crs=shape@proj4string)
+        shapeRaster <- raster::rasterize(shape, baseRaster, field=1)
+        shapeExtPointsDF <- sp::SpatialPointsDataFrame(
+            sp::coordinates(shapeRaster),
+            data=as.data.frame(sp::coordinates(shapeRaster)),
+            proj4string = shape@proj4string)
+    
+        validIndex <- !is.na(sp::over(shapeExtPointsDF, shape)$isPresent)
+        shapePointsGDF <- sf::st_as_sf(shapeExtPointsDF[validIndex,])
+        shapePointsDF <- do.call(sf:::rbind.sf, (lapply(1:nTimes, function(i){
+            shapePointsGDF %>%
+                mutate(tidx=i-1)}))) %>%
+            mutate(id=rep((1:nrow(shapePointsGDF)) - 1, nTimes))
+    }
+    else{
+        shapePointsGDF <- sf::st_as_sf(sp::SpatialPoints(
+            as.matrix(N), shape@proj4string)) %>%
+            mutate(x=N[,1], y=N[,2])
+        shapePointsDF <- do.call(sf:::rbind.sf, (lapply(1:nTimes, function(i){
+            shapePointsGDF %>%
+                mutate(tidx=i-1)}))) %>%
+            mutate(id=rep((1:nrow(shapePointsGDF)) - 1, nTimes))
+    }
+    
     mesh <- INLA::inla.mesh.2d(loc=bbCoords(shape), ...)
     AprojField <- INLA::inla.spde.make.A(mesh=mesh, loc=sf::st_coordinates(shapePointsGDF))
-    
-    shapePointsDF <- do.call(sf:::rbind.sf, (lapply(1:nTimes, function(i){
-        shapePointsGDF %>%
-            mutate(tidx=i-1)}))) %>%
-        mutate(id=rep((1:nrow(shapePointsGDF)) - 1, nTimes))
 
     kappaE <- sqrt(8) / rangeE
     tauE <- 1/(sqrt(4*pi)*kappaE*sigmaE)

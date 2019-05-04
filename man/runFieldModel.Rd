@@ -7,7 +7,7 @@
 runFieldModel(field, pointDF = NULL, polyDF = NULL, moption = 0,
   verbose = FALSE, symbolic = TRUE, control = list(eval.max = 10000,
   iter.max = 10000), rWidth = NULL, priors = FALSE, mcmc = FALSE,
-  ...)
+  AprojPoly = NULL, ...)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -34,6 +34,8 @@ parameters.}
 
 \item{mcmc}{logical, default FALSE Should model be fit with MCMC. Not
 compatible with moption 2.}
+
+\item{AprojPoly}{sparseMatrix, sparse matrix with population weight information for polygons.}
 
 \item{...}{Further arguments to pass to tmbstan}
 }

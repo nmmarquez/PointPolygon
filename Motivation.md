@@ -16,3 +16,8 @@
  - Remember your units!!! (Including in maps)  
  - maps with geographic outlines  
 
+## How do we evealuate models
+ - what is the polict implication???  
+ - How is policy implemented?  
+ - What are the implications of the uncertainty for different policy decisions?  
+ - 
