@@ -20,7 +20,6 @@ args <- commandArgs(trailingOnly=TRUE)
 # rangeE <- .3
 # covVal <- 2
 # covType <- "random"
-# M <- as.integer(150)
 # seed <- as.integer(123)
 
 rangeE <- as.numeric(args[1]) # range of spatial prces varies from {.2, .4, .6}
@@ -54,6 +53,8 @@ find_closest <- function(x1, x2) {
     fullDF$id[ord2[ind + 1][rank1]]
 }
 
+maxYear <- max(c(pointDF$year, polyDF$year))
+
 field <- simField(
     N = as.matrix(select(fullDF, long, lat)), rangeE = rangeE,
     offset = c(0.1, 0.2),
@@ -74,7 +75,7 @@ fullDF <- fullDF %>%
 
 yearWDF <- yearWDF %>%
     rename(oldid=id) %>%
-    mutate(tidx=year-max(year)-1+nT) %>%
+    mutate(tidx=year-maxYear-1+nT) %>%
     left_join(select(fullDF, oldid, id), by="oldid") %>%
     select(-year, -oldid) %>%
     arrange(id) %>%
@@ -96,7 +97,7 @@ psuDF <- polyDF %>%
     }))
 
 polyDF <- polyDF %>%
-    mutate(tidx=year-max(year)-1+nT) %>%
+    mutate(tidx=year-maxYear-1+nT) %>%
     filter(tidx>=0) %>%
     group_by(psu, tidx) %>%
     summarize(trials=sum(N)) %>%
@@ -118,7 +119,7 @@ stratOrder <- arrange(
 
 pointDF <- pointDF %>%
     rename(oldid=id) %>%
-    mutate(tidx=year-max(year)-1+nT) %>%
+    mutate(tidx=year-maxYear-1+nT) %>%
     filter(tidx>=0) %>%
     left_join(select(fullDF, oldid, id), by="oldid") %>%
     left_join(
@@ -176,6 +177,17 @@ AprojPoly <- syearWDF %>%
 # 3 Riemman
 # 4 Ignore
 # 5 Known
+
+polyDF2 <- polyDF %>%
+    group_by(polyid) %>%
+    mutate(iz=1:n()) %>%
+    filter(iz == 1) %>%
+    select(-iz) %>%
+    ungroup
+
+pointDF2 <- pointDF %>%
+    sample_n(1000)
+
 
 modelList <- list(
     `Mixture Model` = runFieldModel(
