@@ -36,7 +36,7 @@ for(i in 1:nrow(paramDF)){
 }
 
 
-paramDF2 <- dplyr::filter(unique(dplyr::select(paramDF, -M)), seed %in% 1:5)
+paramDF2 <- dplyr::filter(unique(dplyr::select(paramDF, -M)), seed %in% 1:10)
 
 for(i in 1:nrow(paramDF2)){
     modelname <- paste0(
@@ -49,8 +49,8 @@ for(i in 1:nrow(paramDF2)){
         "qsub", 
         "-e ~/errors/",
         "-o ~/outputs/",
-        "-l mem_free=150G -l m_mem_free=150G -P proj_geo_nodes_u5m",
-        "-l fthread=20 -l h_rt=03:00:00:00 -q geospatial.q",
+        "-l mem_free=100G -l m_mem_free=100G -P proj_geo_nodes_u5m",
+        "-l fthread=20 -l h_rt=05:00:00:00 -q geospatial.q",
         "-N", modelname,
         "/share/singularity-images/lbd/shells/singR.sh -m 2 -o 4 -e s",
         "~/Documents/PointPolygon/demo/drTest.R", 
