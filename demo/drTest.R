@@ -188,15 +188,15 @@ AprojPoly <- syearWDF %>%
 # 4 Ignore
 # 5 Known
 
-polyDF2 <- polyDF %>%
-    group_by(polyid) %>%
-    mutate(iz=1:n()) %>%
-    filter(iz == 1) %>%
-    select(-iz) %>%
-    ungroup
-
-pointDF2 <- pointDF %>%
-    sample_n(1000)
+# polyDF2 <- polyDF %>%
+#     group_by(polyid) %>%
+#     mutate(iz=1:n()) %>%
+#     filter(iz == 1) %>%
+#     select(-iz) %>%
+#     ungroup
+# 
+# pointDF2 <- pointDF %>%
+#     sample_n(1000)
 
 
 modelList <- list(
