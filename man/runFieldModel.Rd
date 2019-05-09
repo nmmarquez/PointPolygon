@@ -7,7 +7,7 @@
 runFieldModel(field, pointDF = NULL, polyDF = NULL, moption = 0,
   verbose = FALSE, symbolic = TRUE, control = list(eval.max = 10000,
   iter.max = 10000), rWidth = NULL, priors = FALSE, mcmc = FALSE,
-  AprojPoly = NULL, ...)
+  AprojPoly = NULL, start = list(), ...)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -36,6 +36,8 @@ parameters.}
 compatible with moption 2.}
 
 \item{AprojPoly}{sparseMatrix, sparse matrix with population weight information for polygons.}
+
+\item{start}{starting points of parameters.}
 
 \item{...}{Further arguments to pass to tmbstan}
 }

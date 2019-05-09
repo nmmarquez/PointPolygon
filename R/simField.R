@@ -83,8 +83,8 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, rho=.95, shape=NULL, nTimes=1,
         shape <- sp::SpatialPolygons(list(sp::Polygons(list(sp::Polygon(
             matrix(c(0,1,1,0,0,0,1,1), ncol=2))), 1)))
     }
-    shape@data$Bound <- 1
     shape$isPresent <- TRUE
+    shape@data$Bound <- 1
     if(class(N) != "matrix"){
         bb <- shape@bbox
         baseRaster <- raster::raster(

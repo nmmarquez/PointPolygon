@@ -43,11 +43,11 @@ polyList <- samplePolygons(unitSim, N = 5, M = 20, rWidth=5)
 mixPlot <- mixList$polyDF %>%
     select(-id) %>%
     rename(id=trueid) %>%
-    select(trials, obs, polyid, id) %>%
+    select(tidx, trials, obs, polyid, id) %>%
     mutate(locKnown=FALSE) %>%
     rbind(mutate(mixList$pointDF, locKnown=TRUE)) %>%
     select(id, locKnown) %>%
-    right_join(unitSim$spdf@data) %>%
+    right_join(as_tibble(unitSim$spdf)) %>%
     ggplot(aes(x=x, y=y, fill=locKnown)) +
     geom_raster() +
     theme_classic() +
@@ -63,7 +63,7 @@ mixPlot <- mixList$polyDF %>%
 ovPlot <- polyList %>%
     select(id=trueid) %>%
     mutate(locKnown=as.logical(rbinom(n(), 1, .5))) %>%
-    right_join(unitSim$spdf@data) %>%
+    right_join(as_tibble(unitSim$spdf)) %>%
     ggplot(aes(x=x, y=y, fill=locKnown)) +
     geom_raster() +
     theme_classic() +
@@ -138,4 +138,9 @@ resultsPlots$rmseRelative
 
 ```{r rmse2, fig.cap="Rmse Plot"}
 resultsPlots$rmseRelativeZoom
+```
+
+```{r tab}
+oneOffResults <- readRDS("./oneOff.Rds")
+knitr::kable(oneOffResults$modelTable, digits = 4)
 ```

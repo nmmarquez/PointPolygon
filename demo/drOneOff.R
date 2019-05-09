@@ -12,27 +12,13 @@ setwd("~/Documents/PointPolygon/")
 sourceCpp("./demo/dist.cpp")
 load("./demo/prepData.rda")
 
-nT <- 6
-
-args <- commandArgs(trailingOnly=TRUE)
+# nT <- 6
 
 # for testing
-# rangeE <- .3
-# covVal <- 2
-# covType <- "random"
-# seed <- as.integer(123)
-
-rangeE <- as.numeric(args[1]) # range of spatial prces varies from {.2, .4, .6}
-covVal <- as.numeric(args[2]) # covariate effect in set {.2, .4, -.5, .2, -2}
-covType <- args[3] # either random spatial or cluster 
-seed <- as.integer(args[4]) # RNG
-
-modelname <- paste0(
-    "range=", rangeE,
-    ",cov=", covVal,
-    ",covtype=", covType,
-    ",seed=", seed, ".Rds"
-)
+rangeE <- .3
+covVal <- 2
+covType <- "random"
+seed <- as.integer(123)
 
 set.seed(seed)
 
@@ -60,8 +46,8 @@ field <- simField(
     offset = c(0.1, 0.2),
     max.edge = c(0.18,0.2),
     beta0 = -2,
-    betaList = list(list(type=covType, value=covVal)),
-    nTimes = nT,
+    #betaList = list(list(type=covType, value=covVal)),
+    nTimes = 1,
     rho = .85, shape=spDF)
 
 ggField(field)
@@ -75,7 +61,8 @@ fullDF <- fullDF %>%
 
 yearWDF <- yearWDF %>%
     rename(oldid=id) %>%
-    mutate(tidx=year-maxYear-1+nT) %>%
+    #mutate(tidx=year-maxYear-1+nT) %>%
+    mutate(tidx=ifelse(year==2013, 0, -1)) %>%
     left_join(select(fullDF, oldid, id), by="oldid") %>%
     select(-year, -oldid) %>%
     arrange(id) %>%
@@ -97,7 +84,8 @@ psuDF <- polyDF %>%
     }))
 
 polyDF <- polyDF %>%
-    mutate(tidx=year-maxYear-1+nT) %>%
+    #mutate(tidx=year-maxYear-1+nT) %>%
+    mutate(tidx=ifelse(year==2013, 0, -1)) %>%
     filter(tidx>=0) %>%
     group_by(psu, tidx) %>%
     summarize(trials=sum(N)) %>%
@@ -119,7 +107,8 @@ stratOrder <- arrange(
 
 pointDF <- pointDF %>%
     rename(oldid=id) %>%
-    mutate(tidx=year-maxYear-1+nT) %>%
+    #mutate(tidx=year-maxYear-1+nT) %>%
+    mutate(tidx=ifelse(year==2013, 0, -1)) %>%
     filter(tidx>=0) %>%
     left_join(select(fullDF, oldid, id), by="oldid") %>%
     left_join(
@@ -128,7 +117,10 @@ pointDF <- pointDF %>%
     rename(trials=N) %>%
     mutate(obs=rbinom(n(), trials, prob=theta)) %>%
     arrange(tidx, id) %>%
-    select(id, tidx, trials, obs)
+    select(id, tidx, trials, obs) %>%
+    group_by(id, tidx) %>%
+    summarize_all(sum) %>%
+    ungroup
 
 # Turns out IHME only has one point or each large admin level :/
 ihmePolyDF <- read_csv("./demo/ihmeResampleDF.csv") %>%
@@ -163,14 +155,16 @@ ihmePolyDF <- read_csv("./demo/ihmeResampleDF.csv") %>%
     arrange(tidx, polyid)
 
 # lets try the polygons again but make the units the superstates
-syearWDF %>%
-    mutate(location_code=as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
-    group_by(location_code) %>%
-    mutate(popW=Population/sum(Population))
-
-polyDF2 <- polyDF %>%
-    mutate(location_code=as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
-    group_by(tidx)
+# syearSSWDF <- syearWDF %>%
+#     mutate(location_code=as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
+#     mutate(polyid=location_code-1) %>%
+#     select(-location_code) %>%
+#     group_by(polyid) %>%
+#     mutate(popW=Population/sum(Population))
+# 
+# polyDF2 <- polyDF %>%
+#     mutate(location_code=as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
+#     mutate(polyid=location_code-1)
 
 AprojPoly <- syearWDF %>%
     left_join(stratOrder, by="strat") %>%
@@ -188,21 +182,26 @@ AprojPoly <- syearWDF %>%
 # 4 Ignore
 # 5 Known
 
-polyDF2 <- polyDF %>%
-    group_by(polyid) %>%
-    mutate(iz=1:n()) %>%
-    filter(iz == 1) %>%
-    select(-iz) %>%
-    ungroup
-
-pointDF2 <- pointDF %>%
-    sample_n(1000)
-
+# modelList <- list(
+#     `Sub` = runFieldModel(
+#         field, dplyr::sample_frac(pointDF, size=.6), moption=0, verbose=T
+#     ),
+#     `All` = runFieldModel(
+#         field, pointDF, moption=0, verbose=T
+#     ),
+#     `IHME Resample` = runFieldModel(
+#         field, pointDF, ihmePolyDF, moption=5, verbose=T, AprojPoly=AprojPoly
+#     ),
+#     `Known` = runFieldModel(
+#         field, pointDF, polyDF, moption=5, verbose=T, AprojPoly=AprojPoly
+#     )
+# )
 
 modelList <- list(
-    `Mixture Model` = runFieldModel(
-        field, pointDF, polyDF, moption=0, verbose=T, AprojPoly=AprojPoly 
-    ),
+    # `Mixture Model` = runFieldModel(
+    #     field, pointDF, polyDF, moption=0, verbose=T, AprojPoly=AprojPoly,
+    #     control = list(eval.max = 100000, iter.max = 100000)
+    # ),
     `IHME Resample` = runFieldModel(
         field, pointDF, ihmePolyDF, moption=5, verbose=T, AprojPoly=AprojPoly
     ),
@@ -216,6 +215,16 @@ modelList <- list(
         field, pointDF, polyDF, moption=5, verbose=T, AprojPoly=AprojPoly
     )
 )
+
+modelList[["Mixture Model"]] <- runFieldModel(
+        field, pointDF, polyDF, moption=0, verbose=T, AprojPoly=AprojPoly,
+        control = list(eval.max = 100000, iter.max = 100000),
+        start = list(
+            z=matrix(unname(modelList$`IHME Resample`$sd$par.random), ncol=1),
+            beta=modelList$`IHME Resample`$opt$par["beta"])
+    )
+
+modelList$Riemann <- NULL
 
 unitFitList <- lapply(modelList, function(model){
     simulateFieldCI(field, model)
@@ -233,10 +242,45 @@ timeList <- lapply(modelList, function(model){
     as.numeric(model$runtime, units="mins")
 })
 
-unitResults <- list(
+oneOffResults <- list()
+
+oneOffResults$modelTable <- tibble(
+    model = names(unitFitList),
+    # rmse of pixels
+    rmse = sapply(unitFitList, function(df){
+        sqrt(mean((df$mu - df$trueValue)^2))
+    }),
+
+    # Confidence intervals coverage
+    coverage = sapply(unitFitList, function(x){
+        mean(x$trueValue > x$lwr & x$trueValue < x$upr)
+    }),
+
+    # Std err of estimates
+    `Std. Error` = sapply(unitFitList, function(x){
+        mean(x$sd)
+    })) %>% arrange(rmse)
+
+
+
+oneOffResults$field <- ggField(field) +
+    ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.text.x = ggplot2::element_blank()
+    ) +
+    ggplot2::labs(fill="Probability", title="True Probability Field")
+
+oneOffResults$fieldEst <- ggFieldEst(field, unitFitList) +
+    ggplot2::facet_wrap(~Type) +
+    ggplot2::labs(fill="Probability", title="Probability Field Estimates")
+
+oneOffResults$fieldSD <- ggFieldEst(field, unitFitList, sd=T) +
+    ggplot2::facet_wrap(~Type) +
+    ggplot2::labs(fill="Probability\nStd. Err.", title="Probability Field Estimates")
+
+oneOffResults$unitResults <- list(
     sim = field,
     pred = unitFitList,
-    betas = unitBetaList,
     # model = modelList, # this takes up a lot of space so ignore for now
     converge = convergeList,
     covType = covType,
@@ -246,4 +290,4 @@ unitResults <- list(
     runtime = timeList
 )
 
-saveRDS(unitResults, file=paste0("~/Data/spaceTimeTest/", modelname))
+saveRDS(oneOffResults, file=paste0("./demo/oneOff.Rds"))

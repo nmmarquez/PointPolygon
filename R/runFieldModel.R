@@ -19,6 +19,7 @@
 #' @param mcmc logical, default FALSE Should model be fit with MCMC. Not
 #' compatible with moption 2.
 #' @param AprojPoly sparseMatrix, sparse matrix with population weight information for polygons.
+#' @param start starting points of parameters.
 #' @param ... Further arguments to pass to tmbstan
 #' 
 #' @return List of fitted model objects.
@@ -59,6 +60,7 @@ runFieldModel <- function(
     priors = FALSE,
     mcmc = FALSE,
     AprojPoly = NULL,
+    start = list(),
     ...){
     model <- "PointPolygon"
     if(moption == 1 & !is.null(polyDF)){
@@ -110,6 +112,19 @@ runFieldModel <- function(
     inputs$Data$priors <- as.numeric(priors)
     if(!is.null(AprojPoly)){
         inputs$Data$AprojPoly <- AprojPoly
+    }
+    if(length(start) > 0){
+       for(n in names(start)){
+           if(n %in% names(inputs$Params)){
+               if(verbose){
+                   print(class(inputs$Params[[n]]))
+                   print(paste0("replacing start value of ", n))
+                   print(paste0("Original Length ", length(inputs$Params[[n]])))
+                   print(paste0("New Length ", length(start[[n]])))
+               }
+               inputs$Params[[n]] <- start[[n]]
+           }
+       } 
     }
     startTime <- Sys.time()
     Obj <- TMB::MakeADFun(

@@ -11,7 +11,7 @@ field <- simField(
     max.edge = c(0.1,0.2),
     beta0 = -2,
     #betaList = list(list(type="spatial", value=1)),
-    nTimes = 6,
+    # nTimes = 6,
     rho = .85)
 
 ggField(field)
@@ -22,7 +22,7 @@ modelTypes <- c(
     "Mixture Model" = 0,
     "Resample"      = 1,
     # "Utazi"         = 2, # Currently cant run utazi on more than one time
-    "Riemann"       = 3,
+    # "Riemann"       = 3,
     # "Ignore"        = 4,
     "Known"         = 5
 )
