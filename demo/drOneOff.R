@@ -221,7 +221,8 @@ modelList[["Mixture Model"]] <- runFieldModel(
         control = list(eval.max = 100000, iter.max = 100000),
         start = list(
             z=matrix(unname(modelList$`IHME Resample`$sd$par.random), ncol=1),
-            beta=modelList$`IHME Resample`$opt$par["beta"])
+            beta=modelList$`IHME Resample`$opt$par[names(
+                modelList$`IHME Resample`$opt$par) == "beta"])
     )
 
 modelList$Riemann <- NULL

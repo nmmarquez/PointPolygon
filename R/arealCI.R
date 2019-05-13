@@ -10,6 +10,7 @@
 #' @param rWidth integer, instead of using a polygon list divide the original
 #' bounding box into approximately equal sized squares with rWidth number
 #' squares along the x axis.
+#' @param popDF data.frame, use population weights when aggrgating data
 #' @return data.frame, mean, CI, and sd of areal fields.
 #' 
 #' @examples
@@ -36,7 +37,7 @@
 #' 
 #' @export
 
-arealCI <- function(field, modelFit, polygonList=NULL, rWidth=NULL, draws=1000){
+arealCI <- function(field, modelFit, polygonList=NULL, rWidth=NULL, draws=1000, popDF=NULL){
     if(is.null(polygonList)){
         if(is.null(rWidth)){
             stop("rWidth and polygonList can not both be NULL")
@@ -65,6 +66,15 @@ arealCI <- function(field, modelFit, polygonList=NULL, rWidth=NULL, draws=1000){
         row.names(resultsDF) <- NULL
         return(resultsDF)
     }
+    if(is.null(popDF)){
+        w <- rep(1, nrow(field$spdf))
+    }
+    else{
+        w <- field$spdf %>%
+            as_tibble %>%
+            left_join(popDF) %>%
+            pull(w)
+    }
     modelLRP <- buildModelInputs(field, model=FALSE)
     
     parDraws <- t(ar.matrix::sim.AR(draws, modelFit$sd$jointPrecision)) +
@@ -81,7 +91,7 @@ arealCI <- function(field, modelFit, polygonList=NULL, rWidth=NULL, draws=1000){
         modelLRP$Data$covs %*% betaDraws +
             do.call(rbind, lapply(1:field$nTimes, function(i){as.matrix(
                 modelLRP$Data$AprojObs %*% zDraws[((i-1)*nNod + 1):(i*nNod),])
-                })))
+            })))
     
     ciDF <- bind_rows(lapply(1:length(polygonList), function(i){
         subSPDF <- polygonList[[i]]
@@ -105,7 +115,7 @@ arealCI <- function(field, modelFit, polygonList=NULL, rWidth=NULL, draws=1000){
                 pull(present) %>%
                 which()
             
-            subFieldProbs <- apply(fieldProbs[ridx,], 2, mean)
+            subFieldProbs <- apply(fieldProbs[ridx,], 2, weighted.mean, w=w[ridx])
             
             data.frame(
                 mu = mean(subFieldProbs),
@@ -114,7 +124,7 @@ arealCI <- function(field, modelFit, polygonList=NULL, rWidth=NULL, draws=1000){
                 upr = stats::quantile(subFieldProbs, probs=.975),
                 polyid = i-1,
                 tidx = t,
-                trueValue = mean(field$spdf$theta[ridx])
+                trueValue = weighted.mean(field$spdf$theta[ridx], w=w[ridx])
             )
         }))
     }))

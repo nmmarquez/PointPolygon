@@ -8,24 +8,18 @@ library(PointPolygon)
 library(sp)
 library(Rcpp)
 library(Matrix)
+library(ggplot2)
 setwd("~/Documents/PointPolygon/")
 sourceCpp("./demo/dist.cpp")
 load("./demo/prepData.rda")
 
 nT <- 6
 
-args <- commandArgs(trailingOnly=TRUE)
-
 # for testing
-# rangeE <- .3
-# covVal <- 2
-# covType <- "random"
-# seed <- as.integer(123)
-
-rangeE <- as.numeric(args[1]) # range of spatial prces varies from {.2, .4, .6}
-covVal <- as.numeric(args[2]) # covariate effect in set {.2, .4, -.5, .2, -2}
-covType <- args[3] # either random spatial or cluster 
-seed <- as.integer(args[4]) # RNG
+rangeE <- .7
+covVal <- 1
+covType <- "random"
+seed <- as.integer(0)
 
 modelname <- paste0(
     "range=", rangeE,
@@ -61,8 +55,9 @@ field <- simField(
     max.edge = c(0.18,0.2),
     beta0 = -2,
     betaList = list(list(type=covType, value=covVal)),
+    sigmaE = .2,
     nTimes = nT,
-    rho = .85, shape=spDF)
+    rho = .8, shape=spDF)
 
 ggField(field)
 
@@ -72,6 +67,12 @@ fullDF <- fullDF %>%
     left_join(
         select(filter(as_tibble(field$spdf), tidx==0), x, y, id),
         by = c("x", "y"))
+
+fullDF %>%
+    mutate(urban=urban*.8+.2, reg=as.factor(reg)) %>%
+    ggplot(aes(x, y, fill=reg, alpha=urban)) +
+    geom_raster() +
+    theme_classic()
 
 yearWDF <- yearWDF %>%
     rename(oldid=id) %>%
@@ -88,8 +89,7 @@ locDF <- syearWDF %>%
     group_by(strat) %>%
     summarize(id=list(id))
 
-# for each psu resample points based off of the population weights of locations
-polyDF <- polyDF %>%
+polyDF_ <- polyDF %>%
     mutate(tidx=year-maxYear-1+nT) %>%
     group_by(strat, tidx) %>%
     summarize(samples=sum(N)) %>%
@@ -128,10 +128,95 @@ polyDF <- polyDF %>%
     select(id, tidx, trials, obs, polyid, trueid, strat) %>%
     filter(trials != 0)
 
-stratOrder <- arrange(
-    as.data.frame(unique(select(polyDF, polyid, strat))), polyid)
+polyDF_ %>%
+    group_by(tidx, polyid) %>%
+    summarize(
+        trials=sum(trials),
+        obs=sum(obs),
+        clusters=n()
+    ) %>%
+    ungroup %>%
+    left_join(
+        field$spdf %>%
+            as_tibble() %>%
+            select(-geometry) %>%
+            left_join(select(syearWDF, -tidx)) %>%
+            group_by(tidx, strat) %>%
+            mutate(w=Population/sum(Population)) %>%
+            summarize(theta=sum(w*theta)) %>%
+            ungroup %>%
+            arrange(tidx, strat) %>%
+            mutate(polyid=rep((1:length(unique(.$strat)))-1, nT))
+    ) %>%
+    mutate(crude=obs/trials, absdiff=abs(crude-theta)) %>%
+    arrange(-absdiff) %>%
+    left_join(
+        fullDF %>%
+            group_by(strat) %>%
+            summarize(cells=n())
+    )
+    # mutate(ccratio = clusters/ cells) %>%
+    # ggplot(aes(x=ccratio, y=absdiff)) +
+    # geom_point() +
+    # theme_classic()
 
-pointDF <- pointDF %>%
+# we did really bad on this one example where we had seemingly a large number
+# of clusters. I want to see the odds of getting the observed given the true
+# field
+
+polyid__ = 19
+tidx__ = 1
+strat__ = "10_2"
+crude__ = .315
+true__ = .260
+clusters__ = 36
+
+# this doesnt match up with what i tend to think of for central limit stuff
+# im going to nee to do more sanity checking
+
+testDF <- select(as_tibble(field$spdf), id, tidx, theta) %>%
+    left_join(select(syearWDF, -tidx), by="id") %>%
+    filter(tidx == tidx__ & strat == strat__) %>%
+    mutate(w=Population/sum(Population))
+
+# these are from the actual observed sample
+(sampleP <- polyDF_ %>%
+    filter(tidx == tidx__ & strat == strat__) %>%
+    select(tidx, id=trueid, obsold=obs, trials) %>%
+    left_join(select(syearWDF, -tidx), by="id") %>%
+    left_join(
+        select(as_tibble(field$spdf), id, tidx, theta),
+        by=c("id", "tidx")) %>%
+    mutate(w=Population/sum(Population)) %>%
+    {mean(.$theta)})
+
+# this replicates true__ above
+testDF %>%
+    {sum(.$w * .$theta)}
+
+# How wide can these samples get???
+sapply(1:1000, function(i){
+    testDF %>%
+        sample_n(clusters__, replace=T, w) %>%
+        mutate(w=Population/sum(Population)) %>%
+        {mean(.$theta)}
+    }) %>%
+    {tibble(x=.)} %>%
+    ggplot(aes(x)) +
+    geom_density() +
+    geom_vline(xintercept=crude__, color="red", linetype=2) +
+    geom_vline(xintercept=true__, color="black")
+
+tibble(x=100:200, density=dbinom(100:200, 432, sampleP)) %>%
+    ggplot(aes(x=x, y=density)) +
+    geom_line() +
+    theme_classic() +
+    geom_vline(xintercept=136, color="black")
+
+stratOrder <- arrange(
+    as.data.frame(unique(select(polyDF_, polyid, strat))), polyid)
+
+pointDF_ <- pointDF %>%
     rename(oldid=id) %>%
     mutate(tidx=year-maxYear-1+nT) %>%
     filter(tidx>=0) %>%
@@ -164,8 +249,9 @@ ihmePolyDF <- read_csv("./demo/ihmeResampleDF.csv") %>%
     mutate(location_code=as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
     select(trueid, location_code) %>%
     right_join(
-        polyDF %>%
-            mutate(location_code=as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
+        polyDF_ %>%
+            mutate(location_code=
+                       as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
             select(-trueid) , 
         by="location_code") %>%
     group_by(trueid, tidx, location_code) %>%
@@ -194,22 +280,22 @@ AprojPoly <- syearWDF %>%
 
 modelList <- list(
     `IHME Resample` = runFieldModel(
-        field, pointDF, ihmePolyDF, moption=5, verbose=T
+        field, pointDF_, ihmePolyDF, moption=5, verbose=T
     ),
     `Riemann` = runFieldModel(
-        field, pointDF, select(polyDF, -strat), moption=3, verbose=T,
+        field, pointDF_, select(polyDF_, -strat), moption=3, verbose=T,
         AprojPoly=AprojPoly
     ),
     `Ignore` = runFieldModel(
-        field, pointDF, polyDF, moption=4, verbose=T, AprojPoly=AprojPoly
+        field, pointDF_, polyDF_, moption=4, verbose=T, AprojPoly=AprojPoly
     ),
     `Known` = runFieldModel(
-        field, pointDF, polyDF, moption=5, verbose=T, AprojPoly=AprojPoly
+        field, pointDF_, polyDF_, moption=5, verbose=T, AprojPoly=AprojPoly
     )
 )
 
 modelList[["Mixture Model"]] <- runFieldModel(
-    field, pointDF, polyDF, moption=0, verbose=T, AprojPoly=AprojPoly,
+    field, pointDF_, polyDF_, moption=0, verbose=T, AprojPoly=AprojPoly,
     control = list(eval.max = 100000, iter.max = 100000),
     start = list(
         z=matrix(unname(modelList$`IHME Resample`$sd$par.random), ncol=nT),
@@ -221,9 +307,21 @@ unitFitList <- lapply(modelList, function(model){
     simulateFieldCI(field, model)
 })
 
-unitBetaList <- lapply(modelList, function(model){
-    simulateBetas(field, model)
+sapply(unitFitList, function(df){
+    sapply(0:5, function(i){
+        df %>%
+            filter(tidx == i) %>%
+            {sqrt(mean((.$mu - .$trueValue)^2))}
+    })
 })
+
+sapply(unitFitList, function(df){
+    sqrt(mean((df$mu - df$trueValue)^2))
+})
+
+# unitBetaList <- lapply(modelList, function(model){
+#     simulateBetas(field, model)
+# })
 
 convergeList <- lapply(modelList, function(model){
     model$opt$convergence
@@ -253,20 +351,19 @@ regPredList <- lapply(modelList, function(model){
         popDF = mutate(select(syearWDF, -tidx), w=Population))
 })
 
+sapply(provPredList, function(df){
+    sapply(0:5, function(i){
+        df %>%
+            filter(tidx == i) %>%
+            {sqrt(mean((.$mu - .$trueValue)^2))}
+    })
+})
 
-unitResults <- list(
-    sim = field,
-    pred = unitFitList,
-    betas = unitBetaList,
-    # model = modelList, # this takes up a lot of space so ignore for now
-    converge = convergeList,
-    covType = covType,
-    rangeE = rangeE,
-    covVal = covVal,
-    seed = seed,
-    runtime = timeList,
-    provPred = provPredList,
-    regPred = regPredList
-)
+cbind(sapply(modelList, function(model){
+    model$opt$par
+}), True=c(2,covVal, field$fieldPars))
 
-saveRDS(unitResults, file=paste0("~/Data/spaceTimeTest/", modelname))
+
+ggFieldEst(field, unitFitList)
+ggFieldEst(field, unitFitList, sd=T)
+
