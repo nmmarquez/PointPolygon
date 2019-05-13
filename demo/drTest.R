@@ -164,8 +164,9 @@ ihmePolyDF <- read_csv("./demo/ihmeResampleDF.csv") %>%
     mutate(location_code=as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
     select(trueid, location_code) %>%
     right_join(
-        polyDF %>%
-            mutate(location_code=as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
+        polyDF_ %>%
+            mutate(location_code=
+                       as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
             select(-trueid) , 
         by="location_code") %>%
     group_by(trueid, tidx, location_code) %>%
@@ -210,7 +211,6 @@ modelList <- list(
 
 modelList[["Mixture Model"]] <- runFieldModel(
     field, pointDF, polyDF, moption=0, verbose=T, AprojPoly=AprojPoly,
-    control = list(eval.max = 100000, iter.max = 100000),
     start = list(
         z=matrix(unname(modelList$`IHME Resample`$sd$par.random), ncol=nT),
         beta=modelList$`IHME Resample`$opt$par[names(
@@ -258,7 +258,7 @@ unitResults <- list(
     sim = field,
     pred = unitFitList,
     betas = unitBetaList,
-    # model = modelList, # this takes up a lot of space so ignore for now
+    model = modelList, # this takes up a lot of space so ignore for now
     converge = convergeList,
     covType = covType,
     rangeE = rangeE,
