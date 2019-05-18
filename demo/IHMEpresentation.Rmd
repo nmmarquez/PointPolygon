@@ -24,8 +24,8 @@ resultsPlots <- readRDS(
 ## Background
 
 - For countries without comprehensive Vital Registration data accurate use of survey data is essential for estimating child mortality
-- Data come to us at different spatial resolutions and if we believe the true underlying data generating process is continous then administrative data is problematic for traditional geospatial models 
-- How can we effectively/accurately incorporate different spatial resolution data into geospatial models 
+- Data come to us at different spatial resolutions and if we believe the true underlying data generating process is continuous then administrative data is problematic for traditional geospatial models
+- How can we effectively/accurately incorporate different spatial resolution data into geospatial models
 
 ## Data Example
 
@@ -41,7 +41,7 @@ resultsPlots <- readRDS(
 
 - Golding et al 2017 (Resampling)
     - Pros: Uses all available data, applicable for all contexts
-    - Cons: May distort the estimation of sptial correlation
+    - Cons: May distort the estimation of spatial correlation
 - Utazi et al 2018 (RHS Integration with ICAR)
     - Pros: Uses all available data, applicable for all contexts
     - Cons: Built in ecological fallacy and strange non linearity
@@ -55,44 +55,44 @@ resultsPlots <- readRDS(
 $$
 Y_i \sim \text{Binomial}(p_{s_i, t_i}, N_i) \\
 \text{logit}(p_{s_i, t_i}) = \boldsymbol{\beta \cdot X_{s_i, t_i}} + \omega(s_i, t_i) \\
-\boldsymbol{\omega} \sim \mathcal{GP}(\boldsymbol{0}, \mathcal{M} \otimes\text{AR1}) \\ 
+\boldsymbol{\omega} \sim \mathcal{GP}(\boldsymbol{0}, \mathcal{M} \otimes\text{AR1}) \\
 \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})
 $$
 
 ## New Proposal: Mixture Model
 
 $$
-Y^\star_i ~\dot \sim ~ 
+Y^\star_i ~\dot \sim ~
 \begin{cases}
 \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\
 \vdots \\
 \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\
 \end{cases} \text{for } j \in \mathcal{A}_i \\
-\text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ 
+\text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\
 \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})
 $$
 
-## New Proposal Alternative: Reimann 
+## New Proposal Alternative: Reimann
 $$
-Y^\star_i ~\dot \sim ~ 
+Y^\star_i ~\dot \sim ~
 \text{Binomial}(\sum_{j \in \mathcal{A}} p_{s_{j}, t_i} \times q_{s_{j}, t_i}, N_i)\\
-\text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ 
+\text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\
 \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})
 $$
 
 ## Model Requirements
 - Covariate space for entire area must be known  
-- Must have a good sampling frame of population for time of sample 
+- Must have a good sampling frame of population for time of sample
     - If known use enumeration areas
-    - Popualtion Raster is sufficient
-- Relatively Large RAM requiremnts
+    - Population Raster is sufficient
+- Relatively Large RAM requirements
 
 ## Model Comparison Framework: Simulated Field and Sampling
 - Simulate a 2D Matern covariance process GP as the spatial field (1x1 grid)  
 - Add in a covariate to the field which either is  
     - Spatially clustered  
     - Spatially correlated  
-    - At random 
+    - At random
 - Sample from the field with known location  
 - Sample from the field with unknown location up to a polygon
 
@@ -119,13 +119,13 @@ samplePlots$ovPlot
  - Resampling Model
  - Ignore Polygon Model
  - Location Known Model (for Reference)
- 
+
 ## Model Comparison Framework: Evaluation
- - RMSE of the probability field 
+ - RMSE of the probability field
  - Coverage of CI across the field
  - Bias
  - Bias for Dissimilarity Measure
- 
+
 ## Model Results
 ```{r}
 samplePlots$results
@@ -230,16 +230,16 @@ resultsPlotsDR$dissDiff
 aggPlotsDR$runtime
 ```
 
-## Conclusion 
-- New model provides signficant improvement over IHME resampling
-- Most tested models offer some improvement over resampling 
+## Conclusion
+- New model provides significant improvement over IHME resampling
+- Most tested models offer some improvement over resampling
 - Cost of implementation for mixture model is high (runtime & RAM)  
-- Riemann model offers a comprimise in performance and resources  
+- Riemann model offers a compromise in performance and resources  
 
 ## Limitations
-- No model-misspecfication tests  
+- No model miss-specification tests  
 - Unclear how different results are when applied to actual data
 - Should test other countries  
-- Need to vary temporal autocorrelation  
+- Need to vary temporal auto correlation  
 
 ## Questions??
