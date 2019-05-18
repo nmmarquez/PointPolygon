@@ -16,10 +16,10 @@ load("./demo/prepData.rda")
 nT <- 6
 
 # for testing
-rangeE <- .7
-covVal <- 1
+rangeE <- .3
+covVal <- 2
 covType <- "random"
-seed <- as.integer(0)
+seed <- as.integer(1)
 
 modelname <- paste0(
     "range=", rangeE,
@@ -57,7 +57,7 @@ field <- simField(
     betaList = list(list(type=covType, value=covVal)),
     sigmaE = .2,
     nTimes = nT,
-    rho = .8, shape=spDF)
+    rho = .85, shape=spDF)
 
 ggField(field)
 

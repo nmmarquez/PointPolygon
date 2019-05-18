@@ -20,4 +20,7 @@
  - what is the polict implication???  
  - How is policy implemented?  
  - What are the implications of the uncertainty for different policy decisions?  
- - 
+
+## TODO:
+ - Test model mis-specification  
+ - test temproal autocorrelation range   

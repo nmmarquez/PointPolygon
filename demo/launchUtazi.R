@@ -5,7 +5,7 @@ paramDF <- expand.grid(
     covVal = c(2, .4, -.5, .2, -2),
     covType = c("random", "spatial", "cluster"),
     M = seq(50, 300, by=50),
-    seed = 1:10)
+    seed = 1:2)#1:10)
 
 for(i in 1:nrow(paramDF)){
     modelname <- paste0(

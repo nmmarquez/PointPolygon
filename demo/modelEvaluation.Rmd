@@ -35,7 +35,11 @@ unitSim <- simField(
     max.edge = c(0.05,0.2))
 
 fieldPlot <- ggField(unitSim) +
-    labs(fill="Probability", title="Continuous Probability of Event Field")
+    labs(fill="Probability", title="Continuous Probability of Event Field") + 
+    theme(
+      strip.background = element_blank(),
+      strip.text.x = element_blank()
+    )
 
 mixList <- samplePPMix(unitSim, N = 5, M = 20, rWidth=5)
 polyList <- samplePolygons(unitSim, N = 5, M = 20, rWidth=5)

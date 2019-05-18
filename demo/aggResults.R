@@ -58,7 +58,7 @@ resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
 
 aggPlots <- list()
 
-aggPlots$coverage <- resultsDF %>%
+(aggPlots$coverage <- resultsDF %>%
     filter(model != "Known") %>%
     mutate(Model=str_to_title(model)) %>%
     filter(converge == 0) %>%
@@ -78,9 +78,9 @@ aggPlots$coverage <- resultsDF %>%
     labs(x="Model", y="") +
     ggtitle("95% Coverage of Underlying Probability Field") +
     theme(panel.spacing.y = unit(0, "lines")) +
-    guides(color=FALSE)
+    guides(color=FALSE))
 
-aggPlots$rmseRelative <- resultsDF %>%
+(aggPlots$rmseRelative <- resultsDF %>%
     filter(model=="Utazi") %>%
     select(covType:rmse, sampling, polysize) %>%
     rename(rmseUtazi=rmse) %>%
@@ -106,9 +106,9 @@ aggPlots$rmseRelative <- resultsDF %>%
     ggtitle("RMSE: Margin of Improvement Over Utazi Model") +
     theme(panel.spacing.y = unit(0, "lines")) +
     guides(color=FALSE) +
-    geom_text(nudge_y = .32)
+    geom_text(nudge_y = .32))
 
-aggPlots$rmseRelativeZoom <- resultsDF %>%
+(aggPlots$rmseRelativeZoom <- resultsDF %>%
     filter(model=="Utazi") %>%
     select(covType:rmse, sampling, polysize) %>%
     rename(rmseUtazi=rmse) %>%
@@ -135,9 +135,9 @@ aggPlots$rmseRelativeZoom <- resultsDF %>%
     ggtitle("RMSE: Margin of Improvement Over Utazi Model") +
     theme(panel.spacing.y = unit(0, "lines")) +
     guides(color=FALSE) +
-    geom_text(nudge_y = .1)
+    geom_text(aes(y=upr), nudge_y = .1))
 
-aggPlots$bias <- resultsDF %>%
+(aggPlots$bias <- resultsDF %>%
     filter(converge == 0 & model != "Known") %>%
     group_by(covType, model, rangeE) %>%
     summarize(
@@ -157,9 +157,9 @@ aggPlots$bias <- resultsDF %>%
     labs(x="Model", y="Bias") +
     ggtitle("RMSE: Average Bias of Models") +
     theme(panel.spacing.y = unit(0, "lines")) +
-    guides(color=FALSE)
+    guides(color=FALSE))
 
-aggPlots$dissDiff <- resultsDF %>%
+(aggPlots$dissDiff <- resultsDF %>%
     filter(converge == 0 & model != "Known") %>%
     group_by(covType, model, rangeE) %>%
     summarize(
@@ -179,6 +179,6 @@ aggPlots$dissDiff <- resultsDF %>%
     labs(x="Model", y="Bias") +
     ggtitle("Dissimilarity Difference") +
     theme(panel.spacing.y = unit(0, "lines")) +
-    guides(color=FALSE)
+    guides(color=FALSE))
 
 write_rds(aggPlots, "~/Documents/PointPolygon/demo/aggplots.Rds")

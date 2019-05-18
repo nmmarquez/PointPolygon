@@ -60,9 +60,10 @@ field <- simField(
     offset = c(0.1, 0.2),
     max.edge = c(0.18,0.2),
     beta0 = -2,
+    sigmaE = .2,
     betaList = list(list(type=covType, value=covVal)),
     nTimes = nT,
-    rho = .85, shape=spDF)
+    rho = .75, shape=spDF)
 
 ggField(field)
 
@@ -164,7 +165,7 @@ ihmePolyDF <- read_csv("./demo/ihmeResampleDF.csv") %>%
     mutate(location_code=as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
     select(trueid, location_code) %>%
     right_join(
-        polyDF_ %>%
+        polyDF %>%
             mutate(location_code=
                        as.numeric(str_split(strat, "_", simplify=T)[,1])) %>%
             select(-trueid) , 
