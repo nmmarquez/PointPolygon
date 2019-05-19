@@ -2,7 +2,11 @@
 title: "Harmonizing Survey Child Mortality Data at Disparate Geographic Resolutions"
 author: Neal Marquez
 date: May 20, 2019
-output: ioslides_presentation
+output: 
+  slidy_presentation: 
+    fig_width: 12.5
+    font_adjustment: -1
+    theme: readable
 ---
 
 ```{r setup, include=FALSE}
@@ -72,7 +76,7 @@ Y^\star_i ~\dot \sim ~
 \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})
 $$
 
-## New Proposal Alternative: Reimann
+## New Proposal Alternative: Riemann
 $$
 Y^\star_i ~\dot \sim ~
 \text{Binomial}(\sum_{j \in \mathcal{A}} p_{s_{j}, t_i} \times q_{s_{j}, t_i}, N_i)\\
@@ -227,7 +231,7 @@ resultsPlotsDR$dissDiff
 
 ## Notes on Runtime
 ```{r}
-aggPlotsDR$runtime
+resultsPlotsDR$runtime
 ```
 
 ## Conclusion
