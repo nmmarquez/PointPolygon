@@ -114,24 +114,25 @@ samplePlots$fieldDR
 # Results
 
 ```{r out.width='95%', fig.align='center'}
-resultsPlots$rmseRelativeZoom
+resultsPlots$rmseRelativePaper
 ```
 
 ```{r out.width='95%', fig.align='center'}
-resultsPlots$coverage
+resultsPlots$coveragePaper
 ```
 
 ```{r out.width='95%', fig.align='center'}
-resultsPlotsDR$dissDiff
+resultsPlotsDR$dissDiffPaper
 ```
 
+```{r out.width='95%', fig.align='center'}
+samplePlots$drProvErrorPaper
+```
 
-# Con
-
-Aliquam sed faucibus risus, quis efficitur erat. Vestibulum semper mauris quis tempus eleifend. Aliquam sagittis dictum ipsum, quis viverra ligula eleifend ut. Curabitur sagittis vitae arcu eget faucibus. In non elementum felis. Duis et aliquam nunc. Nunc pulvinar sapien nunc, vel pretium nisi efficitur in. Fusce fringilla maximus leo et maximus. Fusce at ligula laoreet, iaculis mi at, auctor odio. Praesent sed elementum justo. Aenean consectetur risus rhoncus tincidunt efficitur. Praesent dictum mauris at diam maximus maximus [@thorneposterdown2019].
 
 # Conclusion
 
-Try `posterdown` out! Hopefully you like it!
-
-# References
+- New model provides significant improvement over previous models
+- Model selection has significant impact on interpretation of results
+- Improvment in RMSE of up to 30% in Dominican Republic simulation 
+- Reduction of standard errors compared to ignoring data (35% at province)

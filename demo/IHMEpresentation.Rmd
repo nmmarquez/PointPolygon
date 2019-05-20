@@ -162,7 +162,7 @@ samplePlots$resultsSD
 
 # Model Results
 ```{r}
-resultsPlots$rmseRelativeZoom
+resultsPlots$rmseRelative
 ```
 
 ---
@@ -286,6 +286,7 @@ resultsPlotsDR$runtime
 # Conclusion
 - New model provides significant improvement over IHME resampling
 - Most tested models offer some improvement over resampling
+- Reduction of standard errors compared to ignoring data (35% at province)
 - Cost of implementation for mixture model is high (runtime & RAM)  
 - Riemann model offers a compromise in performance and resources  
 
