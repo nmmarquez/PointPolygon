@@ -11,6 +11,8 @@
 *.rda
 *.csv
 *.old
+demo/IHMEpresentation_files
+demo/libs
 
 # Example code in package build process
 *-Ex.R

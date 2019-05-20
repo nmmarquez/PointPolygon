@@ -1,16 +1,19 @@
 ---
 title: "Harmonizing Survey Child Mortality Data at Disparate Geographic Resolutions"
-author: Neal Marquez
-date: May 20, 2019
-output: 
-  slidy_presentation: 
-    fig_width: 12.5
-    font_adjustment: -1
-    theme: readable
+author: "Neal Marquez"
+institute: "Institute For Health Metrics and Evaluation"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.height=4, dev='svg')
 ```
 
 ```{r include=FALSE}
@@ -25,23 +28,29 @@ resultsPlots <- readRDS(
     "~/Documents/PointPolygon/demo/aggplots.Rds")
 ```
 
-## Background
+# Background
 
 - For countries without comprehensive Vital Registration data accurate use of survey data is essential for estimating child mortality
 - Data come to us at different spatial resolutions and if we believe the true underlying data generating process is continuous then administrative data is problematic for traditional geospatial models
 - How can we effectively/accurately incorporate different spatial resolution data into geospatial models
 
-## Data Example
+---
+
+# Data Example
 
 <img src=https://www.gentlemansgazette.com/wp-content/uploads/2014/06/Dominican-Map.jpg style="height: 450px"/>
 
-## Data Example
+---
+
+# Data Example
 - Historically incomplete VR for child births and deaths
 - Number of surveys on complete birth history (CBH)
 - DHS 2007 & 2013: Complete Spatial information given for CBH
 - MICS 2014: Cluster location removed for CBH know only up to stratification
 
-## Previous Approaches
+---
+
+# Previous Approaches
 
 - Golding et al 2017 (Resampling)
     - Pros: Uses all available data, applicable for all contexts
@@ -54,44 +63,36 @@ resultsPlots <- readRDS(
     - Cons: Slow to implement and potential privacy issues
 - No substantive cross comparison between models evaluating performance
 
-## New Proposal: Mixture Model
+---
 
-$$
-Y_i \sim \text{Binomial}(p_{s_i, t_i}, N_i) \\
-\text{logit}(p_{s_i, t_i}) = \boldsymbol{\beta \cdot X_{s_i, t_i}} + \omega(s_i, t_i) \\
-\boldsymbol{\omega} \sim \mathcal{GP}(\boldsymbol{0}, \mathcal{M} \otimes\text{AR1}) \\
-\boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})
-$$
+# New Proposal: Mixture Model
 
-## New Proposal: Mixture Model
+$$Y_i \sim \text{Binomial}(p_{s_i, t_i}, N_i) \\ \text{logit}(p_{s_i, t_i}) = \boldsymbol{\beta \cdot X_{s_i, t_i}} + \omega(s_i, t_i) \\ \boldsymbol{\omega} \sim \mathcal{GP}(\boldsymbol{0}, \mathcal{M} \otimes\text{AR1}) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})$$
 
-$$
-Y^\star_i ~\dot \sim ~
-\begin{cases}
-\text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\
-\vdots \\
-\text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\
-\end{cases} \text{for } j \in \mathcal{A}_i \\
-\text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\
-\boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})
-$$
+---
 
-## New Proposal Alternative: Riemann
-$$
-Y^\star_i ~\dot \sim ~
-\text{Binomial}(\sum_{j \in \mathcal{A}} p_{s_{j}, t_i} \times q_{s_{j}, t_i}, N_i)\\
-\text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\
-\boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})
-$$
+# New Proposal: Mixture Model
 
-## Model Requirements
+$$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\ \vdots \\ \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\ \end{cases} \text{for } j \in \mathcal{A}_i \\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})$$
+
+---
+
+# New Proposal Alternative: Riemann
+
+$$Y^\star_i ~\dot \sim ~ \text{Binomial}(\sum_{j \in \mathcal{A}} p_{s_{j}, t_i} \times q_{s_{j}, t_i}, N_i)\\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})$$
+
+---
+
+# Model Requirements
 - Covariate space for entire area must be known  
 - Must have a good sampling frame of population for time of sample
     - If known use enumeration areas
     - Population Raster is sufficient
 - Relatively Large RAM requirements
 
-## Model Comparison Framework: Simulated Field and Sampling
+---
+
+# Model Comparison Framework: Simulated Field and Sampling
 - Simulate a 2D Matern covariance process GP as the spatial field (1x1 grid)  
 - Add in a covariate to the field which either is  
     - Spatially clustered  
@@ -100,23 +101,34 @@ $$
 - Sample from the field with known location  
 - Sample from the field with unknown location up to a polygon
 
-## Model Comparison Framework: Simulated Field
-<img src=https://i.imgur.com/UFUqUPT.png style="height: 450px"/>
+---
 
-## Model Comparison Framework: Simulated Field Variation
-<img src=https://i.imgur.com/36kXIWk.png style="height: 450px"/>
+# Model Comparison Framework: Simulated Field
+<img src="./UFUqUPT.png" style="height: 450px"/>
 
-## Model Comparison Framework: Sampling
+---
+
+# Model Comparison Framework: Simulated Field Variation
+
+<img src=./36kXIWk.png style="height: 450px" />
+
+---
+
+# Model Comparison Framework: Sampling
 ```{r}
 samplePlots$mixPlot
 ```
 
-## Model Comparison Framework: Sampling
+---
+
+# Model Comparison Framework: Sampling
 ```{r}
 samplePlots$ovPlot
 ```
 
-## Model Comparison Framework: Candidate Models
+---
+
+# Model Comparison Framework: Candidate Models
  - Mixture Model  
  - Utazi Model  
  - Riemann Model  
@@ -124,43 +136,59 @@ samplePlots$ovPlot
  - Ignore Polygon Model
  - Location Known Model (for Reference)
 
-## Model Comparison Framework: Evaluation
+---
+
+# Model Comparison Framework: Evaluation
  - RMSE of the probability field
  - Coverage of CI across the field
  - Bias
  - Bias for Dissimilarity Measure
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 samplePlots$results
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 samplePlots$resultsSD
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 resultsPlots$rmseRelativeZoom
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 resultsPlots$coverage
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 resultsPlots$bias
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 resultsPlots$dissDiff
 ```
 
-## Simulation DR Context
+---
+
+# Simulation DR Context
 
 - Simulate spatial-temporal field over 6 years across the DR ~(5x5km grid)
 - Sample using DHS 2013 and MICS 2014 location information
@@ -169,81 +197,108 @@ resultsPlots$dissDiff
 - Mics:  684 clusters of data with ~25,000 person years of data
 - No Utazi model
 
-## Dominican Republic Sampling
+---
+
+# Dominican Republic Sampling
 ```{r}
 samplePlots$fieldDR
 ```
 
-## Dominican Republic Sampling
+---
+
+# Dominican Republic Sampling
 ```{r}
 samplePlots$fieldDR2
 ```
 
-## Dominican Republic Sampling
+---
+
+# Dominican Republic Sampling
 ```{r}
 samplePlots$reg
 ```
 
-## Dominican Republic Sampling
+---
+
+# Dominican Republic Sampling
 ```{r}
 samplePlots$regUR
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 samplePlots$drResults
 ```
 
-## Model Results
-```{r}
-samplePlots$drResults
-```
+---
 
-## Model Results
+# Model Results
 ```{r}
 samplePlots$drProvError
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 resultsPlotsDR$rmseRelative
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 resultsPlotsDR$rmseProvRelative
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 resultsPlotsDR$bias
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 resultsPlotsDR$provcoverage
 ```
 
-## Model Results
+---
+
+# Model Results
 ```{r}
 resultsPlotsDR$dissDiff
 ```
 
-## Notes on Runtime
+---
+
+# Notes on Runtime
 ```{r}
 resultsPlotsDR$runtime
 ```
 
-## Conclusion
+---
+
+# Conclusion
 - New model provides significant improvement over IHME resampling
 - Most tested models offer some improvement over resampling
 - Cost of implementation for mixture model is high (runtime & RAM)  
 - Riemann model offers a compromise in performance and resources  
 
-## Limitations
+---
+
+# Limitations
 - No model miss-specification tests  
 - Unclear how different results are when applied to actual data
 - Should test other countries  
 - Need to vary temporal auto correlation  
 
-## Questions??
+---
+
+class: inverse, center, middle
+
+# Questions??
