@@ -1,0 +1,137 @@
+---
+# PLEASE SEE THE README for in depth description github.com/brentthorne/posterdown
+poster_height: "48in"
+poster_width: "36in"
+font_family: 'Rasa'
+#ESSENTIALS
+title: '**Harmonizing Disparate Spatial Resolution Surveys for Estimating U5M in VR Strained Countries**'
+author:
+  - name: '**Neal Marquez**'
+    affil: 1, 2
+    main: true
+    email: nmarquez@uw.edu
+  - name: Jonathan Wakefield
+    affil: 3, 4
+    main: false
+    email: 'jonno@uw.edu'
+affiliation:
+  - num: 1
+    address: Department of Sociology, University of Washington 
+  - num: 2
+    address: Institute for Health Metrics and Evaluation, Seattle, Washington
+  - num: 3
+    address: Department of Statistics, University of Washington
+  - num: 3
+    address: Department of Biostatistics, University of Washington
+#STYLE & FORMATTING
+title_textsize: "90pt"
+author_textsize: "1.17em"
+authorextra_textsize: "35px"
+affiliation_textsize: "25px"
+affiliation_textcol: '#00000080'
+caption_fontsize: "20pt"
+#Middle of the poster
+middle_fontfamily: "Special Elite"
+middle_textcol: "#FFFFFF"
+middle:textalpha: 90
+middle_fontsize: "150px"
+main_findings:
+  - "Utilizing more varied survey data sources."
+  - "Improving estimates for precision public health."
+logoleft_name: "Figures/wlogo.png"
+logocenter_name: "Figures/qr-code-black.png"
+logoright_name: "Figures/cssslogo.png"
+#---POSTER BODY OPTIONS---#
+primary_colour: '#4b2e83'
+secondary_colour: '#8968ca'
+accent_colour: "#b7a57a"
+body_bgcol: "#ffffff"
+body_textsize: "45px"
+body_textcol: "#000000"
+reference_textsize: "23px"
+#--Standard Options--#
+output: 
+  posterdown::posterdown_betterport:
+    self_contained: false
+    pandoc_args: --mathjax
+    highlight: espresso
+    number_sections: true
+bibliography: MyBib.bib
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  results = 'asis',
+  echo = FALSE,
+  comment = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'
+)
+```
+
+```{r}
+library(ggplot2)
+
+samplePlots <- readRDS(
+    "~/Documents/PointPolygon/demo/plotsForPresent.Rds")
+
+resultsPlotsDR <- readRDS(
+    "~/Documents/PointPolygon/demo/aggplotsDR.Rds")
+
+resultsPlots <- readRDS(
+    "~/Documents/PointPolygon/demo/aggplots.Rds")
+```
+
+# Introduction
+
+A new focus on reducing inequalities in global health outcomes has required that geographic data be used to understand the spatial risk of detrimental health outcomes and to identify who lies at the margins for greatest risk. While some data sources provide geographic coordinates for each observation, many sources provide data that are representative of administrative units only. How to harmonize these data sources has been widely contested, but to date, no agreed solution has overcome issues when data are presented in the combined form of point alongside polygon data. Furthermore, tests comparing validity of methods are nearly non-existent. 
+
+## Objectives
+
+1. Introduce a novel method for using admin repersentative data for spatial models. 
+2. Compare against previously formed models.
+3. Compare in policy relevant scenarios.
+
+# Data  
+
+- World Population Ratsers Data
+- 2014 Multiple Indicator Cluster Survey DR
+- 2013 Demographic and Health Survey DR
+- Administrative Boundary Data DR
+
+# Methods
+
+$$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\ \vdots \\ \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\ \end{cases} \text{for } j \in \mathcal{A}_i \\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})$$
+
+## Simulation Scenarios
+
+<img src="../UFUqUPT.png" width="900px"/>
+
+```{r out.width='95%', fig.align='center'}
+samplePlots$fieldDR
+```
+
+# Results
+
+```{r out.width='95%', fig.align='center'}
+resultsPlots$rmseRelativeZoom
+```
+
+```{r out.width='95%', fig.align='center'}
+resultsPlots$coverage
+```
+
+```{r out.width='95%', fig.align='center'}
+resultsPlotsDR$dissDiff
+```
+
+
+# Con
+
+Aliquam sed faucibus risus, quis efficitur erat. Vestibulum semper mauris quis tempus eleifend. Aliquam sagittis dictum ipsum, quis viverra ligula eleifend ut. Curabitur sagittis vitae arcu eget faucibus. In non elementum felis. Duis et aliquam nunc. Nunc pulvinar sapien nunc, vel pretium nisi efficitur in. Fusce fringilla maximus leo et maximus. Fusce at ligula laoreet, iaculis mi at, auctor odio. Praesent sed elementum justo. Aenean consectetur risus rhoncus tincidunt efficitur. Praesent dictum mauris at diam maximus maximus [@thorneposterdown2019].
+
+# Conclusion
+
+Try `posterdown` out! Hopefully you like it!
+
+# References
