@@ -152,7 +152,7 @@ samplePlots <- list()
     labs(fill="Geolocated"))
 
 sampUnitResults <- 
-    "~/Data/utaziTest3/range=0.3,cov=-0.5,covtype=cluster,M=100,seed=1.Rds"
+    "~/Data/utaziTest3/range=0.3,cov=-0.5,covtype=random,M=300,seed=6.Rds"
 
 rezUnit <- readRDS(sampUnitResults)
 rezUnit$sim$spdf <- rezUnit$sim$spdf %>%
@@ -160,11 +160,11 @@ rezUnit$sim$spdf <- rezUnit$sim$spdf %>%
     mutate(tidx=0)
 
 predList <- lapply(list(
-    `Mixture Model` = rezUnit$pred$`Mixed Model`$mixed$`5`,
-    Riemann = rezUnit$pred$Reimann$mixed$`5`,
-    Utazi = rezUnit$pred$Utazi$mixed$`5`,
-    Resample = rezUnit$pred$Resample$mixed$`5`,
-    Known = rezUnit$pred$Known$mixed$`5`), function(df){
+    `Mixture Model` = rezUnit$pred$`Mixed Model`$overlap$`5`,
+    Riemann = rezUnit$pred$Reimann$overlap$`5`,
+    Utazi = rezUnit$pred$Utazi$overlap$`5`,
+    Resample = rezUnit$pred$Resample$overlap$`5`,
+    Known = rezUnit$pred$Known$overlap$`5`), function(df){
         df %>% mutate(tidx=0)
     })
 
@@ -176,6 +176,14 @@ predList <- lapply(list(
     labs(fill="Std. Error") +
     facet_wrap(~Type))
 
+(samplePlots$resultsPaper <- ggFieldEst(rezUnit$sim, predList[-2]) +
+        labs(fill="Probability") +
+        facet_wrap(~Type))
+
+(samplePlots$resultsSDPaper <- ggFieldEst(rezUnit$sim, predList[-2], sd=T) +
+        labs(fill="Std. Error") +
+        facet_wrap(~Type))
+
 #sourceCpp("./demo/dist.cpp")
 load("./demo/prepData.rda")
 
@@ -184,7 +192,6 @@ nT <- 6
 rangeE <- .5
 covVal <- .2
 covType <- "random"
-seed <- as.integer(123)
 
 set.seed(123)
 
@@ -278,14 +285,32 @@ rezDR <- readRDS(sampDRResults)
 
 (samplePlots$drResults <- ggFieldEst(rezDR$sim, rezDR$pred) +
     labs(fill="Probability"))
+(samplePlots$drResultsPaper <- ggFieldEst(rezDR$sim, rezDR$pred[-2]) +
+        labs(fill="Probability"))
 (samplePlots$drSD <- ggFieldEst(rezDR$sim, rezDR$pred, sd=T) +
     labs(fill="Std. Error"))
+(samplePlots$drSDPaper <- ggFieldEst(rezDR$sim, rezDR$pred[-2], sd=T) +
+        labs(fill="Std. Error"))
 
 (samplePlots$drProvError <- 
     do.call(sf:::rbind.sf, lapply(names(rezDR$pred), function(n){
         rezDR$provPred[[n]] %>%
             mutate(Model=n)})) %>%
         mutate(absDiff=abs(mu-trueValue)) %>%
+        ggplot() +
+        geom_sf(aes(fill = absDiff)) +
+        theme_void() +
+        coord_sf(datum=NA) +
+        facet_grid(Model~tidx) +
+        scale_fill_distiller(palette = "Spectral") +
+        labs(fill="Absolute\nError"))
+
+(samplePlots$drProvErrorPaper <- 
+        do.call(sf:::rbind.sf, lapply(names(rezDR$pred), function(n){
+            rezDR$provPred[[n]] %>%
+                mutate(Model=n)})) %>%
+        mutate(absDiff=abs(mu-trueValue)) %>%
+        filter(Model != "Riemann") %>%
         ggplot() +
         geom_sf(aes(fill = absDiff)) +
         theme_void() +

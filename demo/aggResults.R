@@ -9,7 +9,7 @@ library(stringr)
 library(tidyr)
 library(ggplot2)
 
-rdsPathList <- list.files("~/Data/utaziTest2/", full.names=TRUE)
+rdsPathList <- list.files("~/Data/utaziTest3/", full.names=TRUE)
 
 resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
     x <- readRDS(f_)
@@ -54,12 +54,12 @@ resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
         sampling = str_split(names(pList), "\\.", simplify=TRUE)[,2],
         polysize = str_split(names(pList), "\\.", simplify=TRUE)[,3],
         converge = unlist(x$converge))
-    }, mc.cores=5))
+    }, mc.cores=5)) %>%
+    mutate(model=gsub("Reimann", "Riemann", model))
 
 aggPlots <- list()
 
 (aggPlots$coverage <- resultsDF %>%
-    filter(model != "Known") %>%
     mutate(Model=str_to_title(model)) %>%
     filter(converge == 0) %>%
     group_by(covType, rangeE, Model) %>%
@@ -80,12 +80,33 @@ aggPlots <- list()
     theme(panel.spacing.y = unit(0, "lines")) +
     guides(color=FALSE))
 
+(aggPlots$coveragePaper <- resultsDF %>%
+        mutate(Model=str_to_title(model)) %>%
+        filter(converge == 0 & model != "Riemann") %>%
+        group_by(covType, rangeE, Model) %>%
+        summarize(
+            mu = mean(coverage),
+            lwr = quantile(coverage, probs=.025),
+            upr = quantile(coverage, probs=.975)
+        ) %>%
+        ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model)) +
+        geom_point() +
+        geom_errorbar() +
+        theme_classic() +
+        facet_grid(rangeE~covType) +
+        coord_flip() +
+        geom_hline(yintercept=.95, linetype=2) +
+        labs(x="Model", y="") +
+        ggtitle("95% Coverage of Underlying Probability Field") +
+        theme(panel.spacing.y = unit(0, "lines")) +
+        guides(color=FALSE))
+
 (aggPlots$rmseRelative <- resultsDF %>%
     filter(model=="Utazi") %>%
     select(covType:rmse, sampling, polysize) %>%
     rename(rmseUtazi=rmse) %>%
     right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
-    filter(converge == 0 & model != "Known") %>%
+    filter(converge == 0) %>%
     mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
     group_by(covType, model, rangeE) %>%
     summarize(
@@ -108,12 +129,40 @@ aggPlots <- list()
     guides(color=FALSE) +
     geom_text(nudge_y = .32))
 
+(aggPlots$rmseRelativePaper <- resultsDF %>%
+        filter(model=="Utazi") %>%
+        select(covType:rmse, sampling, polysize) %>%
+        rename(rmseUtazi=rmse) %>%
+        right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
+        filter(converge == 0 & model !="Riemann") %>%
+        mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
+        group_by(covType, model, rangeE) %>%
+        summarize(
+            mu = mean(improveRatio),
+            lwr = mean(improveRatio) - 1.96*(sd(improveRatio)/sqrt(n())),
+            upr = mean(improveRatio) + 1.96*(sd(improveRatio)/sqrt(n()))) %>%
+        ungroup %>%
+        rename(Model=model) %>%
+        mutate(txt=round(mu, 2)) %>%
+        ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
+        geom_point() +
+        geom_errorbar() +
+        theme_classic() +
+        facet_grid(rangeE~covType) +
+        coord_flip() +
+        geom_hline(yintercept=0, linetype=2) +
+        labs(x="Model", y="Relative Improvement") +
+        ggtitle("RMSE: Margin of Improvement Over Utazi Model") +
+        theme(panel.spacing.y = unit(0, "lines")) +
+        guides(color=FALSE) +
+        geom_text(nudge_y = .32))
+
 (aggPlots$rmseRelativeZoom <- resultsDF %>%
     filter(model=="Utazi") %>%
     select(covType:rmse, sampling, polysize) %>%
     rename(rmseUtazi=rmse) %>%
     right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
-    filter(converge == 0 & model != "Known") %>%
+    filter(converge == 0) %>%
     filter(model != "Ignore") %>%
     mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
     group_by(covType, model, rangeE) %>%
@@ -138,7 +187,7 @@ aggPlots <- list()
     geom_text(aes(y=upr), nudge_y = .1))
 
 (aggPlots$bias <- resultsDF %>%
-    filter(converge == 0 & model != "Known") %>%
+    filter(converge == 0) %>%
     group_by(covType, model, rangeE) %>%
     summarize(
         mu = mean(bias),
@@ -159,8 +208,52 @@ aggPlots <- list()
     theme(panel.spacing.y = unit(0, "lines")) +
     guides(color=FALSE))
 
+(aggPlots$biasPaper <- resultsDF %>%
+        filter(converge == 0 & model != "Riemann") %>%
+        group_by(covType, model, rangeE) %>%
+        summarize(
+            mu = mean(bias),
+            lwr = quantile(bias, probs=.025),
+            upr = quantile(bias, probs=.975)) %>%
+        ungroup %>%
+        rename(Model=model) %>%
+        mutate(txt=round(mu, 2)) %>%
+        ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
+        geom_point() +
+        geom_errorbar() +
+        theme_classic() +
+        facet_grid(rangeE~covType) +
+        coord_flip() +
+        geom_hline(yintercept=0, linetype=2) +
+        labs(x="Model", y="Bias") +
+        ggtitle("RMSE: Average Bias of Models") +
+        theme(panel.spacing.y = unit(0, "lines")) +
+        guides(color=FALSE))
+
 (aggPlots$dissDiff <- resultsDF %>%
-    filter(converge == 0 & model != "Known") %>%
+        filter(converge == 0) %>%
+        group_by(covType, model, rangeE) %>%
+        summarize(
+            mu = mean(dissDiff),
+            lwr = quantile(dissDiff, probs=.025),
+            upr = quantile(dissDiff, probs=.975)) %>%
+        ungroup %>%
+        rename(Model=model) %>%
+        mutate(txt=round(mu, 2)) %>%
+        ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
+        geom_point() +
+        geom_errorbar() +
+        theme_classic() +
+        facet_grid(rangeE~covType) +
+        coord_flip() +
+        geom_hline(yintercept=0, linetype=2) +
+        labs(x="Model", y="Bias") +
+        ggtitle("Dissimilarity Difference") +
+        theme(panel.spacing.y = unit(0, "lines")) +
+        guides(color=FALSE))
+
+(aggPlots$dissDiffPaper <- resultsDF %>%
+    filter(converge == 0 & model != "Riemann") %>%
     group_by(covType, model, rangeE) %>%
     summarize(
         mu = mean(dissDiff),
