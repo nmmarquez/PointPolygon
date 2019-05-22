@@ -270,4 +270,4 @@ unitResults <- list(
     regPred = regPredList
 )
 
-saveRDS(unitResults, file=paste0("~/Data/spaceTimeTest/", modelname))
+saveRDS(unitResults, file=paste0("~/Data/spaceTimeTest2/", modelname))
