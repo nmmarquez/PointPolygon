@@ -67,19 +67,19 @@ resultsPlots <- readRDS(
 
 # New Proposal: Mixture Model
 
-$$Y_i \sim \text{Binomial}(p_{s_i, t_i}, N_i) \\ \text{logit}(p_{s_i, t_i}) = \boldsymbol{\beta \cdot X_{s_i, t_i}} + \omega(s_i, t_i) \\ \boldsymbol{\omega} \sim \mathcal{GP}(\boldsymbol{0}, \mathcal{M} \otimes\text{AR1}) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})$$
+$$Y_i \sim \text{Binomial}(p_{s_i, t_i}, N_i) \\ \text{logit}(p_{s_i, t_i}) = \boldsymbol{\beta \cdot X_{s_i, t_i}} + \omega(s_i, t_i) \\ \boldsymbol{\omega} \sim \mathcal{GP}(\boldsymbol{0}, \mathcal{M} \otimes\text{AR1}) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1}) \\ \kappa \sim \text{Log Normal}(0, 10) \\ \tau \sim \text{Log Normal}(0, 10) \\ \rho \sim \text{Logit Normal}(0, 10)$$
 
 ---
 
 # New Proposal: Mixture Model
 
-$$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\ \vdots \\ \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\ \end{cases} \text{for } j \in \mathcal{A}_i \\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})$$
+$$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\ \vdots \\ \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\ \end{cases} \text{for } j \in \mathcal{A}_i \\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1}) \\ \kappa \sim \text{Log Normal}(0, 10) \\ \tau \sim \text{Log Normal}(0, 10) \\ \rho \sim \text{Logit Normal}(0, 10)$$
 
 ---
 
 # New Proposal Alternative: Riemann
 
-$$Y^\star_i ~\dot \sim ~ \text{Binomial}(\sum_{j \in \mathcal{A}} p_{s_{j}, t_i} \times q_{s_{j}, t_i}, N_i)\\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})$$
+$$Y^\star_i ~\dot \sim ~ \text{Binomial}(\sum_{j \in \mathcal{A}} p_{s_{j}, t_i} \times q_{s_{j}, t_i}, N_i)\\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1}) \\ \kappa \sim \text{Log Normal}(0, 10) \\ \tau \sim \text{Log Normal}(0, 10) \\ \rho \sim \text{Logit Normal}(0, 10)$$
 
 ---
 
@@ -138,14 +138,6 @@ samplePlots$ovPlot
 
 ---
 
-# Model Comparison Framework: Evaluation
- - RMSE of the probability field
- - Coverage of CI across the field
- - Bias
- - Bias for Dissimilarity Measure
-
----
-
 # Model Results
 ```{r}
 samplePlots$results
@@ -157,6 +149,16 @@ samplePlots$results
 ```{r}
 samplePlots$resultsSD
 ```
+
+---
+
+# Model Comparison Framework: Evaluation
+ - RMSE of the probability field
+$\frac{\text{RMSE}_{\text{Utazi}} - \text{RMSE}_{\text{Model}}}{\text{RMSE}_{\text{Utazi}}}$
+ - Coverage of CI across the field
+ - Bias
+ - Bias for Dissimilarity Measure
+ - Breakdown results by spatial range and covariate types
 
 ---
 

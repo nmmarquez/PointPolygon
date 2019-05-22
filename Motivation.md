@@ -23,4 +23,10 @@
 
 ## TODO:
  - Test model mis-specification  
- - test temproal autocorrelation range   
+ - test temproal autocorrelation range  
+ - test when the approx9imation may be poor and when it does pretty well  
+ - test reasonable values of U5m as well as single year data 
+ - Throw in other measures of variation to examine and test 
+ - Relative root mean squared error
+ - Turn off multithreads for TMB 
+ - Show how different the mixture is from the approximation   

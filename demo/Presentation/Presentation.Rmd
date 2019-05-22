@@ -1,7 +1,7 @@
 ---
 # PLEASE SEE THE README for in depth description github.com/brentthorne/posterdown
-poster_height: "48in"
-poster_width: "36in"
+poster_height: "36in"
+poster_width: "24in"
 font_family: 'Rasa'
 #ESSENTIALS
 title: '**Harmonizing Disparate Spatial Resolution Surveys for Estimating U5M in VR Strained Countries**'
@@ -24,9 +24,9 @@ affiliation:
   - num: 3
     address: Department of Biostatistics, University of Washington
 #STYLE & FORMATTING
-title_textsize: "90pt"
+title_textsize: "70pt"
 author_textsize: "1.17em"
-authorextra_textsize: "35px"
+authorextra_textsize: "40px"
 affiliation_textsize: "25px"
 affiliation_textcol: '#00000080'
 caption_fontsize: "20pt"
@@ -34,7 +34,7 @@ caption_fontsize: "20pt"
 middle_fontfamily: "Special Elite"
 middle_textcol: "#FFFFFF"
 middle:textalpha: 90
-middle_fontsize: "150px"
+middle_fontsize: "100px"
 main_findings:
   - "Utilizing more varied survey data sources."
   - "Improving estimates for precision public health."
@@ -46,9 +46,9 @@ primary_colour: '#4b2e83'
 secondary_colour: '#8968ca'
 accent_colour: "#b7a57a"
 body_bgcol: "#ffffff"
-body_textsize: "45px"
+body_textsize: "35px"
 body_textcol: "#000000"
-reference_textsize: "23px"
+reference_textsize: "20px"
 #--Standard Options--#
 output: 
   posterdown::posterdown_betterport:
@@ -88,8 +88,8 @@ A new focus on reducing inequalities in global health outcomes has required that
 
 ## Objectives
 
-1. Introduce a novel method for using admin repersentative data for spatial models. 
-2. Compare against previously formed models.
+1. Introduce a novel method for using admin data for spatial models. 
+2. Compare against previous models.
 3. Compare in policy relevant scenarios.
 
 # Data  
@@ -101,24 +101,27 @@ A new focus on reducing inequalities in global health outcomes has required that
 
 # Methods
 
-$$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\ \vdots \\ \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\ \end{cases} \text{for } j \in \mathcal{A}_i \\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1})$$
+$$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\ \vdots \\ \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\ \end{cases} \text{for } j \in \mathcal{A}_i \\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1}) \\ \kappa \sim \text{Log Normal}(0, 10) \\ \tau \sim \text{Log Normal}(0, 10) \\ \rho \sim \text{Logit Normal}(0, 10)$$
 
 ## Simulation Scenarios
 
-<img src="../UFUqUPT.png" width="900px"/>
+<img src="../UFUqUPT.png" width="95%"/>
 
 ```{r out.width='95%', fig.align='center'}
-samplePlots$fieldDR
+samplePlots$fieldDR +
+        ggplot2::facet_wrap(~tidx, ncol=2)
 ```
+
+<br>
+<br>
+<br>
+<br>
+<br>
 
 # Results
 
 ```{r out.width='95%', fig.align='center'}
 resultsPlots$rmseRelativePaper
-```
-
-```{r out.width='95%', fig.align='center'}
-resultsPlots$coveragePaper
 ```
 
 ```{r out.width='95%', fig.align='center'}
@@ -132,7 +135,7 @@ samplePlots$drProvErrorPaper
 
 # Conclusion
 
-- New model provides significant improvement over previous models
-- Model selection has significant impact on interpretation of results
-- Improvment in RMSE of up to 30% in Dominican Republic simulation 
-- Reduction of standard errors compared to ignoring data (35% at province)
+1. New model provides significant improvement over previous models
+2. Model selection has significant impact on interpretation of results
+3. Improvment in RMSE of up to 30% in Dominican Republic simulation 
+4. Reduction of standard errors compared to ignoring data (35% at province)

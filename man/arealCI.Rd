@@ -5,7 +5,7 @@
 \title{Estimate Confidence Intervals (CI) for Areal Probability Field Via Simulation}
 \usage{
 arealCI(field, modelFit, polygonList = NULL, rWidth = NULL,
-  draws = 1000)
+  draws = 1000, popDF = NULL)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -19,6 +19,8 @@ bounding box into approximately equal sized squares with rWidth number
 squares along the x axis.}
 
 \item{draws}{int, number of draws for simulation to calculate CI's}
+
+\item{popDF}{data.frame, use population weights when aggrgating data}
 }
 \value{
 data.frame, mean, CI, and sd of areal fields.

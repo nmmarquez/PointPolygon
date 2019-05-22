@@ -59,8 +59,8 @@ field <- simField(
     N = as.matrix(select(fullDF, long, lat)), rangeE = rangeE,
     offset = c(0.1, 0.2),
     max.edge = c(0.18,0.2),
-    beta0 = -2,
-    sigmaE = .2,
+    beta0 = -4,
+    sigmaE = .3,
     betaList = list(list(type=covType, value=covVal)),
     nTimes = nT,
     rho = .75, shape=spDF)

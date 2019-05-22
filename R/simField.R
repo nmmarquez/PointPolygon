@@ -155,10 +155,12 @@ simField <- function(N=60, sigmaE=1, rangeE=.3, rho=.95, shape=NULL, nTimes=1,
                 suppressWarnings(clusters <- stats::kmeans(
                     sf::st_coordinates(shapePointsGDF), centers = 10, iter.max = 1))
                 newCov <- c(newCov, stats::runif(10)[clusters$cluster])
+                newCov <- newCov - mean(newCov)
             }
         }
         else{
             newCov <- stats::runif(N2)
+            newCov <- newCov - mean(newCov)
         }
         shapePointsDF[[paste0("V", i)]] <- newCov
     }
