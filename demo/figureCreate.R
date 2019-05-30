@@ -152,7 +152,7 @@ samplePlots <- list()
     labs(fill="Geolocated"))
 
 sampUnitResults <- 
-    "~/Data/utaziTest3/range=0.3,cov=-0.5,covtype=random,M=300,seed=6.Rds"
+    "demo/Results/range=0.3,cov=-0.5,covtype=random,M=300,seed=6.Rds"
 
 rezUnit <- readRDS(sampUnitResults)
 rezUnit$sim$spdf <- rezUnit$sim$spdf %>%
@@ -232,14 +232,6 @@ syearWDF <- filter(yearWDF, tidx == max(tidx))
     scale_fill_distiller(palette = "Spectral") +
     theme_void())
 
-(samplePlots$popWDR <- syearWDF %>%
-    left_join(select(fullDF, x, y, id), by="id") %>%
-    ggplot(aes(x=x, y=y, fill=popW)) +
-    geom_raster() +
-    scale_fill_distiller(palette = "Spectral") +
-    theme_void() +
-    labs(fill="Weighted\nPopulation"))
-
 (samplePlots$fieldDR <- ggField(field2) +
         labs(fill="Probability"))
 
@@ -270,17 +262,39 @@ regDivideShape <- st_as_sf(rgeos::gUnaryUnion(spDF, id=spDF@data$strat))
     coord_sf(datum=NA))
 
 (samplePlots$regUR <- ggplot(regDivideShape) +
-    geom_sf() +
+    geom_sf(alpha=0) +
     theme_void() +
     coord_sf(datum=NA))
+
+(samplePlots$popWDR <- syearWDF %>%
+        left_join(select(fullDF, x, y, id), by="id") %>%
+        ggplot(aes(x=x, y=y, fill=popW)) +
+        geom_raster() +
+        scale_fill_distiller(palette = "Spectral") +
+        geom_sf(aes(x=NULL, y=NULL, fill=NULL), data=regDivideShape, alpha=0) +
+        theme_void() +
+        labs(fill="Weighted\nPopulation"))
 
 (samplePlots$prov <- ggplot(provShape) +
     geom_sf() +
     theme_void() +
     coord_sf(datum=NA))
 
+(samplePlots$regSamples <- ggplot(regShape) +
+    geom_sf() +
+    theme_void() +
+    coord_sf(datum=NA) +
+    geom_point(
+        aes(x=long, y=lat),
+        fill=NA,
+        size=.1,
+        data=pointDF %>%
+            filter(grepl("2013", source)) %>%
+            select(lat, long) %>%
+            unique()))
+
 sampDRResults <- 
-    "~/Data/spaceTimeTest/range=0.7,cov=-0.5,covtype=spatial,seed=1.Rds"
+    "demo/Results/range=0.7,cov=-0.5,covtype=spatial,seed=1.Rds"
 rezDR <- readRDS(sampDRResults)
 
 (samplePlots$drResults <- ggFieldEst(rezDR$sim, rezDR$pred) +

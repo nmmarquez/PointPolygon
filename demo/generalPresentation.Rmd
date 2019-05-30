@@ -1,0 +1,206 @@
+---
+title: "Harmonizing Survey Child Mortality Data at Disparate Geographic Resolutions"
+author: "Neal Marquez"
+institute: "University of Washington"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.height=4, dev='svg')
+```
+
+```{r include=FALSE}
+library(ggplot2)
+samplePlots <- readRDS(
+    "~/Documents/PointPolygon/demo/plotsForPresent.Rds")
+
+resultsPlotsDR <- readRDS(
+    "~/Documents/PointPolygon/demo/aggplotsDR.Rds")
+
+resultsPlots <- readRDS(
+    "~/Documents/PointPolygon/demo/aggplots.Rds")
+```
+
+
+class: center, middle
+
+# Background
+
+---
+
+# Child Mortality and the Millenium Development Goals
+
+- "... the Persistence ofdisparities in infant mortality rates throughout this century, mirroring the persistence of larger social and economic inequalities in the United States" (Gormaker & Wise 1997)
+- Child mortality as an indictor for
+    - Maternal health
+    - Access to care
+    - General public health
+    - Morbidity and early life adversity
+- Mellenium Development Goals (MDGs)
+    - Reduce child mortality by two thirds
+
+---
+
+# The Lasting Effects of MDGs
+
+- Comparative health-systems studies (Horton 2006)
+    - The importance of strengthening health systems
+    - Evidence based implmentation
+    - Strong importance on understanding data landscape
+- Countdown to 2015 (Victoria et al 2016)
+    - The importance of multiple stakeholders in monitoring processes
+    - Linking interventions to health improvments
+    - Planning for future goals
+
+---
+# Mexico: Changes in Under Five Mortality
+
+<img src=https://ars.els-cdn.com/content/image/1-s2.0-S014067360669569X-gr1_lrg.jpg>
+
+---
+# Limitations of the National Context: Inequality
+
+- Country level studies mask variation within the country (Hosseinpoor 2016)
+    - Need for unmasking geographic differences in health
+    - Deploy equity oriented interventions
+- Precision public health (Desmond-Hellmann 2016)
+- Recent studies point to growing levels of health inequalities by subnational measures
+    - Rising inequality in United States county level mortality (Dwyer-Lindgren 2017)
+    - Differential gains in Sub-Saharan Africa under five mortality (Burke 2016)
+    
+---
+# Evidence of Growing Health Inequality
+
+<img src=https://cdn.jamanetwork.com/ama/content_public/journal/intemed/936342/ioi170020f3.png?Expires=2147483647&Signature=u2NlWKnJTY116YMspD2RpB15V~DYlNHNhsW2cmLy3ieE9rYp2p3BpyTvDwWC8LwKXWDVLD69i~S579f6IF~l83E6gycRsttYxG7jXIWJfHS2Fsln4y29K4~cGtvo0DkmGjVfzU1vU-Q~aa7kJjzQBBk9l5rzmJStBa~XIFwG3jIQlxbFuoFzsK9jmjqx8iKURSYYGE9whcuz200KCzSLA7S6uL195ZvsswkYRw5en2eBNeONaQcRsuZ0hYYsIsJaPtxQFlunxwiJXj5~fHuh~TSFPbOPNVTU8SCv7jFYYpapM5SSaTeYKoer1c3ZwnMIn5tyyhVcmGrfBk5XoaET4A__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA >
+
+---
+# Spatial Analysis of Under 5 Mortality
+
+- Leverage spatial auto-correlation in health events to get better informed estimates
+- Classic example Clayton and Kaldor 1987 Socttish Lip Cancer
+
+---
+# Example of Spatial Smoothing
+<img src="lipCancer.png">
+
+
+---
+# Spatial Analysis of Under 5 Mortality
+
+- Leverage spatial auto-correlation in health events to get better informed estimates
+- Classic example Clayton and Kaldor 1987 Socttish Lip Cancer
+    - Pooling information across space improves estimates
+    - Different observavtions give us different levels of information
+    - Similar things tend to cluster in space
+    
+---
+# Spatial Mechenisms of Health Outcomes
+- Access to health facilities
+- Neighborhood characteristics and early life adversity
+- Clustered socio-economic characteristics
+    - Quality of education
+    - Economic standing 
+    - [Racial/ethnic clustering](https://demographics.virginia.edu/DotMap/index.html)
+
+---
+# Limitations to Current Analysis of Geospatial Child Mortality
+- Data must be sufficiently geocoded
+    - Known enumeration areas from MICS/DHS
+    - Geolocatted data points
+- Data must come in the form of complete birth histories
+    - Summary birth histories
+    - Vital Registration may also be used if comprehensive
+- Data must be represenative of the locations they sample
+
+---
+# DHS and MICS Studies
+- United States Agency for International Development / UNICEF funded
+- Monitor changes in health in developing countries
+    - Countries that do not have comprehensive registration systems
+- Collect data on a number of health indicators including CBH of women in households
+- Relatively small portion of the data is geolocated
+    - 25% of person years observed are geolocated
+    - 75% are representative of some national/subnational level
+    - Data is still collected in similar survey scheme
+    
+---
+# Proposal 
+- Introduce a new method for incorporating clustered obscured data in spatial analysis
+- Compare against gold standard of knowing where data comes from 
+- Compare against ingoring the data completely 
+- Comapre against previously stated methods
+- Comparison framework
+    - Simulate spatio-temporal field of underlying probabilities
+    - Sample from the field at random
+    - Obscure locations for some samples representative of a particular area
+    - Validate on error and coverage metrics
+
+---
+class: center, middle
+
+# Method
+
+---
+# Data Collection Process for MICS/DHS
+- Two stage sampling process
+- Divide country of concern into stratifications
+    - Administrative areas
+    - Urban/Rural
+- Using enumeration areas as a frame sample areas within a startification 
+- Sample households from within the enumeration areas selected
+- Usually not sampled at random and weights are given to samples
+- Weights reflect representation of a given stratified area
+- CBH give us retrospective samples
+
+---
+# An Example Case: Dominican Republic
+- Historically incomplete VR for child births and deaths
+- Number of surveys on complete birth history (CBH)
+- DHS 2007 & 2013: Complete Spatial information given for CBH
+- MICS 2014: Cluster location removed for CBH know only up to stratification
+
+---
+# An Example Case: Dominican Republic
+
+```{r}
+samplePlots$popDR
+```
+
+---
+# An Example Case: Dominican Republic
+
+```{r}
+samplePlots$reg
+```
+
+---
+# An Example Case: Dominican Republic
+
+```{r}
+samplePlots$regSamples
+```
+
+---
+# Traditional Spatial Modeling Approach
+- Continous model of underlying spatial risk
+- Allows for arbitrary aggregation to adminstrative levels
+
+$$Y_i \sim \text{Binomial}(p_{s_i, t_i}, N_i) \\ \text{logit}(p_{s_i, t_i}) = \boldsymbol{\beta \cdot X_{s_i, t_i}} + \omega(s_i, t_i) \\ \boldsymbol{\omega} \sim \mathcal{GP}(\boldsymbol{0}, \mathcal{M} \otimes\text{AR1}) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1}) \\ \kappa \sim \text{Log Normal}(0, 10) \\ \tau \sim \text{Log Normal}(0, 10) \\ \rho \sim \text{Logit Normal}(0, 10)$$
+---
+# New Proposal: Mixture Model
+
+```{r}
+samplePlots$popWDR
+```
+
+---
+# New Proposal: Mixture Model
+
+$$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\ \vdots \\ \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\ \end{cases} \text{for } j \in \mathcal{A}_i \\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1}) \\ \kappa \sim \text{Log Normal}(0, 10) \\ \tau \sim \text{Log Normal}(0, 10) \\ \rho \sim \text{Logit Normal}(0, 10)$$

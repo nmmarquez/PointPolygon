@@ -195,7 +195,7 @@ resultsPlots$dissDiff
 - Simulate spatial-temporal field over 6 years across the DR ~(5x5km grid)
 - Sample using DHS 2013 and MICS 2014 location information
 - Simulate cluster locations for MICS within known stratification (Region/urbanicity)
-- DHS: 370 clusters with 3256 person-years of Data
+- DHS: 370 clusters with 3256 person-years of data
 - Mics:  684 clusters of data with ~25,000 person years of data
 - No Utazi model
 
