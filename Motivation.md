@@ -29,4 +29,10 @@
  - Throw in other measures of variation to examine and test 
  - Relative root mean squared error
  - Turn off multithreads for TMB 
- - Show how different the mixture is from the approximation   
+ - Show how different the mixture is from the approximation 
+
+## Tests
+ - Compare against no spatial variation!
+ - Compare against no covariate effect!
+ - Check province level estimations in the mcmc comparsions! 
+ - Variogram of residuals to show true spatial effect 
