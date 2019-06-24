@@ -11,6 +11,7 @@ library(Matrix)
 setwd("~/Documents/PointPolygon/")
 sourceCpp("./demo/dist.cpp")
 load("./demo/prepData.rda")
+setwd("./src/")
 
 maxYear <- 2015
 minYear <- 2000
@@ -78,9 +79,9 @@ modelRun <- function(
         moption <- 0
         snu <- c(0, 0)
         empty <- vector("integer")
-        polyDF <- tibble(data.frame(
+        polyDF <- data.frame(
             denom=empty, obs=empty, id=empty, yid=empty, aid=empty,
-            sid=empty, cid=empty, polyid=empty, strat=empty))
+            sid=empty, cid=empty, polyid=empty, strat=empty)
     }
     
     Data <- list(
@@ -127,17 +128,19 @@ modelRun <- function(
     
     Map <- list(
         log_sigma_eta = factor(NA),
-        eta = factor(rep(length(Params$eta), NA))
+        eta = factor(rep(NA, length(Params$eta)))
     )
     
-    random <- c("z", "epsilon", "phi", "nu", "eta")
+    random <- c("z", "epsilon", "phi", "nu")
     
     if(nugget){
         Map <- NULL
-        random <- c("z", "epsilon", "phi", "nu")
+        random <- c("z", "epsilon", "phi", "nu", "eta")
     }
     
     model <- "u5m"
+    dyn.load(dynlib(model))
+    config(tape.parallel=0, DLL=model)
     
     startTime <- Sys.time()
     Obj <- MakeADFun(
@@ -157,6 +160,8 @@ modelRun <- function(
     sdrep <- TMB::sdreport(Obj, getJointPrecision=TRUE)
     runtime <- Sys.time() - startTime
     
+    dyn.unload(dynlib(model))
+    
     list(
         obj = Obj,
         opt = Opt,
@@ -165,3 +170,5 @@ modelRun <- function(
         moption = moption,
         stack=NULL)
 }
+
+test <- modelRun(pointDF, polyDF=NULL, moption=0)
