@@ -10,7 +10,7 @@ library(tidyr)
 library(ggplot2)
 library(sf)
 
-rdsPathList <- list.files("~/Data/spaceTimeTest/", full.names=TRUE)
+rdsPathList <- list.files("~/Data/spaceTimeTest2/", full.names=TRUE)
 
 resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
     print(f_)
@@ -153,12 +153,13 @@ aggPlotsDR <- list()
         theme(panel.spacing.y = unit(0, "lines")) +
         guides(color=FALSE))
 
+
 (aggPlotsDR$rmseRelative <- resultsDF %>%
     filter(model=="IHME Resample") %>%
     select(covType:rmse) %>%
     rename(rmseUtazi=rmse) %>%
     right_join(select(resultsDF, covType:rmse, model, converge)) %>%
-    filter(converge == 0) %>%
+    filter(converge == 0 & rmse <.3) %>%
     mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
     group_by(covType, model, rangeE) %>%
     summarize(
@@ -214,7 +215,7 @@ aggPlotsDR <- list()
         select(covType:seed, provrmse) %>%
         rename(rmseUtazi=provrmse) %>%
         right_join(select(resultsDF, covType:seed, provrmse, model, converge)) %>%
-        filter(converge == 0) %>%
+        filter(converge == 0 & provrmse <.3) %>%
         mutate(improveRatio=(rmseUtazi-provrmse)/rmseUtazi) %>%
         group_by(covType, model, rangeE) %>%
         summarize(
@@ -264,6 +265,79 @@ aggPlotsDR <- list()
         theme(panel.spacing.y = unit(0, "lines")) +
         guides(color=FALSE) +
         geom_text(aes(y=upr), nudge_y = .06))
+
+(aggPlotsDR$rmseSingleProvRelativePaper <- resultsDF %>%
+        filter(model=="IHME Resample") %>%
+        select(covType:seed, provrmse) %>%
+        rename(rmseUtazi=provrmse) %>%
+        right_join(select(resultsDF, covType:seed, provrmse, model, converge)) %>%
+        filter(converge == 0 & model != "Riemann") %>%
+        mutate(improveRatio=(rmseUtazi-provrmse)/rmseUtazi) %>%
+        group_by(model) %>%
+        summarize(
+            mu = mean(improveRatio),
+            lwr = mean(improveRatio) - 1.96*(sd(improveRatio)/sqrt(n())),
+            upr = mean(improveRatio) + 1.96*(sd(improveRatio)/sqrt(n()))) %>%
+        ungroup %>%
+        rename(Model=model) %>%
+        mutate(txt=round(mu, 2)) %>%
+        ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
+        geom_point() +
+        geom_errorbar() +
+        theme_classic() +
+        coord_flip() +
+        geom_hline(yintercept=0, linetype=2) +
+        labs(x="Model", y="Relative Improvement") +
+        ggtitle("Province RMSE: Margin of Improvement Over IHME Resample Model") +
+        theme(panel.spacing.y = unit(0, "lines")) +
+        guides(color=FALSE) +
+        geom_text(aes(y=upr), nudge_y = .06))
+
+(aggPlotsDR$rmsePaper <- resultsDF %>%
+        filter(converge == 0 & model != "Riemann" & rmse < .3) %>%
+        group_by(covType, model, rangeE) %>%
+        summarize(
+            mu = mean(rmse),
+            lwr = mean(rmse) - 1.96*(sd(rmse)/sqrt(n())),
+            upr = mean(rmse) + 1.96*(sd(rmse)/sqrt(n()))) %>%
+        ungroup %>%
+        rename(Model=model) %>%
+        mutate(txt=round(mu, 4)) %>%
+        ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
+        geom_point() +
+        geom_errorbar() +
+        theme_classic() +
+        facet_grid(rangeE~covType) +
+        coord_flip() +
+        geom_hline(yintercept=0, linetype=2) +
+        labs(x="Model", y="RMSE") +
+        ggtitle("Province RMSE") +
+        theme(panel.spacing.y = unit(0, "lines")) +
+        guides(color=FALSE) +
+        geom_text(aes(y=upr), nudge_y = .002))
+
+(aggPlotsDR$rmseProvPaper <- resultsDF %>%
+        filter(converge == 0 & model != "Riemann" & rmse < .3) %>%
+        group_by(covType, model, rangeE) %>%
+        summarize(
+            mu = mean(provrmse),
+            lwr = mean(provrmse) - 1.96*(sd(provrmse)/sqrt(n())),
+            upr = mean(provrmse) + 1.96*(sd(provrmse)/sqrt(n()))) %>%
+        ungroup %>%
+        rename(Model=model) %>%
+        mutate(txt=round(mu, 4)) %>%
+        ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
+        geom_point() +
+        geom_errorbar() +
+        theme_classic() +
+        facet_grid(rangeE~covType) +
+        coord_flip() +
+        geom_hline(yintercept=0, linetype=2) +
+        labs(x="Model", y="RMSE") +
+        ggtitle("Province RMSE") +
+        theme(panel.spacing.y = unit(0, "lines")) +
+        guides(color=FALSE) +
+        geom_text(aes(y=upr), nudge_y = .002))
 
 (aggPlotsDR$bias <- resultsDF %>%
     filter(converge == 0) %>%

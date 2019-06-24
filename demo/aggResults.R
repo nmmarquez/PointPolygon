@@ -157,6 +157,33 @@ aggPlots <- list()
         guides(color=FALSE) +
         geom_text(nudge_y = .32))
 
+(aggPlots$rmseSingleRelativePaper <- resultsDF %>%
+        filter(model=="Utazi") %>%
+        select(covType:rmse, sampling, polysize) %>%
+        rename(rmseUtazi=rmse) %>%
+        right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
+        filter(converge == 0 & model !="Riemann" & model != "Utazi") %>%
+        mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
+        group_by(model) %>%
+        summarize(
+            mu = mean(improveRatio),
+            lwr = mean(improveRatio) - 1.96*(sd(improveRatio)/sqrt(n())),
+            upr = mean(improveRatio) + 1.96*(sd(improveRatio)/sqrt(n()))) %>%
+        ungroup %>%
+        rename(Model=model) %>%
+        mutate(txt=round(mu, 2)) %>%
+        ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
+        geom_point() +
+        geom_errorbar() +
+        theme_classic() +
+        coord_flip() +
+        geom_hline(yintercept=0, linetype=2) +
+        labs(x="Model", y="Relative Improvement") +
+        ggtitle("RMSE: Margin of Improvement Over Utazi Model") +
+        theme(panel.spacing.y = unit(0, "lines")) +
+        guides(color=FALSE) +
+        geom_text(nudge_y = .22))
+
 (aggPlots$rmseRelativeZoom <- resultsDF %>%
     filter(model=="Utazi") %>%
     select(covType:rmse, sampling, polysize) %>%
