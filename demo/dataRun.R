@@ -8,6 +8,7 @@ library(PointPolygon)
 library(sp)
 library(Rcpp)
 library(Matrix)
+library(TMB)
 setwd("~/Documents/PointPolygon/")
 sourceCpp("./demo/dist.cpp")
 load("./demo/prepData.rda")
@@ -49,7 +50,7 @@ covArray[,,2] <- sapply(1:nYears, function(i) fullDF$urban)
 pointDF <- pointDF %>%
     mutate(denom=N, obs=died, yid=year-minYear, aid=ageVec[age_group]) %>%
     mutate(sid=as.numeric(as.factor(source))-1) %>%
-    mutate(cid=group_indices(., sid, psu)) %>%
+    mutate(cid=group_indices(., sid, psu)-1) %>%
     rename(oldid=id) %>%
     left_join(select(fullDF, id, oldid), by="oldid") %>%
     select(denom, obs, id, yid, aid, sid, cid)
@@ -139,6 +140,7 @@ modelRun <- function(
     }
     
     model <- "u5m"
+    compile(paste0(model, ".cpp"))
     dyn.load(dynlib(model))
     config(tape.parallel=0, DLL=model)
     
@@ -171,4 +173,5 @@ modelRun <- function(
         stack=NULL)
 }
 
-test <- modelRun(pointDF, polyDF=NULL, moption=0)
+test <- modelRun(pointDF, polyDF=NULL, moption=0, nugget = FALSE)
+
