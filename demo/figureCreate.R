@@ -9,7 +9,6 @@ require(dplyr)
 require(ggplot2)
 library(PointPolygon)
 library(stringr)
-library(tidyr)
 library(sf)
 library(Rcpp)
 library(rgdal)
@@ -339,4 +338,48 @@ samplePlots$demoPlotList <- list(
     example3 = plotList3
 )
 
+samplePlots$samplesMap <-field2$bound %>%
+    st_as_sf %>%
+    ggplot() +
+    geom_sf(alpha=0) +
+    geom_point(
+        aes(long, lat, color=Source),
+        size=.2,
+        alpha=.4,
+        data=pointDF %>%
+            select(lat, long, Source=source) %>%
+            unique()) +
+    theme_void() +
+    coord_sf(datum=NA) +
+    theme(legend.position = c(0.6, 0.2))
+
 saveRDS(samplePlots, file="./demo/plotsForPresent.Rds")
+
+pointDF %>%
+    select(age_group, source, year) %>%
+    bind_rows(select(polyDF, age_group, source, year)) %>%
+    mutate(y=case_when(
+        age_group == "NN" ~ 1/12,
+        age_group == "PNN1" ~ 5/12,
+        age_group == "PNN2" ~ 6/12,
+        TRUE ~ 1
+    )) %>%
+    group_by(source, year) %>%
+    summarize(personYears=sum(y)) %>%
+    arrange(year, source) %>%
+    as.data.frame
+
+pointDF %>%
+    select(age_group, source, year) %>%
+    bind_rows(select(polyDF, age_group, source, year)) %>%
+    mutate(y=case_when(
+        age_group == "NN" ~ 1,
+        age_group == "PNN1" ~ 5,
+        age_group == "PNN2" ~ 6,
+        TRUE ~ 12
+    )) %>%
+    group_by(source) %>%
+    summarize(personYears=sum(y)) %>%
+    arrange(source) %>%
+    as.data.frame %>%
+    pull(personYears)

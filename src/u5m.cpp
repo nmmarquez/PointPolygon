@@ -114,6 +114,8 @@ Type objective_function<Type>::operator() ()
     PARAMETER_VECTOR(nu); // survey level effects
     PARAMETER_VECTOR(eta); // cluster level nugget
     
+    std::cout << "Variables Loaded.\n";
+    
     int Npoint = yPoint.size();
     int Npoly = yPoly.size();
     
@@ -133,6 +135,8 @@ Type objective_function<Type>::operator() ()
         beta_agec[i] = beta_age[i-1];
     }
     
+    std::cout << "Variables Transformed.\n";
+    
     Type nll = 0.0;
     
     // Apply fixed effect and hyper-parameter priors
@@ -144,6 +148,7 @@ Type objective_function<Type>::operator() ()
         nll -= dnorm(log_kappa, Type(0.0), Type(100.0), true);
     }
     
+    std::cout << "Fixed Effect priors applied.\n";
     // apply random effect structure priors
     SparseMatrix<Type> Q = spde_Q(log_kappa, log_tau, M0, M1, M2);
     
@@ -154,6 +159,8 @@ Type objective_function<Type>::operator() ()
         nll += GMRF(Q)(z.matrix().col(0));
     }
 
+    std::cout << "SPDE priors applied.\n";
+    
     for(int i=0; i<nu.size(); i++){
         nll -= dnorm(nu[i], Type(0.0), sigma_nu, true);
     }
@@ -166,26 +173,34 @@ Type objective_function<Type>::operator() ()
         nll -= dnorm(eta[i], Type(0.0), sigma_eta, true);
     }
 
+    std::cout << "Basic iid priors applied.\n";
+    
     vector<Type> aget(phi.dim(1));
     for(int i=0; i<phi.dim(0); i++){
         for(int j=0; j<phi.dim(1); j++){
             aget[j] = phi(i,j);
         }
-        nll += densRW2(aget, sigma_phi[i]);
+        //nll += densRW2(aget, sigma_phi[i]);
+        nll += SCALE(AR1(Type(.99)), sigma_phi[i])(aget);
     }
+    
+    std::cout << "RW2 priors applied.\n";
     
     // Turn z into a matrix here so projLatF is space by time
     matrix<Type> projLatF = AprojObs * z.matrix();
+    std::cout << "Project space time.\n";
     // covs should be an array that we loop through time to have space by time
     matrix<Type> projCov(projLatF.rows(), projLatF.cols());
     for(int s=0; s<projLatF.rows(); s++){
         for(int t=0; t<projLatF.cols(); t++){
             projCov(s,t) = epsilon(t);
             for(int b=0; b<beta.size(); b++){
-                projCov(s,t) += covs(s,b,t) * beta(b);
+                projCov(s,t) += covs(s,t,b) * beta(b);
             }
         }
     }
+    
+    std::cout << "Betas added.\n";
     
     matrix<Type> projLatObs = projLatF + projCov;
     Type nllPart;
@@ -194,11 +209,13 @@ Type objective_function<Type>::operator() ()
     
     for(int i=0; i<Npoint; i++){
         logitp = projLatObs(idPoint[i],idtPoint[i]) + \
-            phi(idtPoint[i], idaPoint[i]) + nu[idnPoint[i]] + \
+            phi(idaPoint[i], idtPoint[i]) + nu[idnPoint[i]] + \
             beta_agec[idaPoint[i]] + eta[idcPoint[i]];
         p = exp(logitp) / (Type(1.) + exp(logitp));
         nll -= dbinom(Type(yPoint[i]), Type(denomPoint[i]), p, true);
     }
+    
+    std::cout << "Point data added.\n";
     
     if(Npoly != 0){
         // mixture model estimation
@@ -209,7 +226,7 @@ Type objective_function<Type>::operator() ()
                     // see the following link for indexing sparse matrices
                     // https://eigen.tuxfamily.org/dox/group__TutorialSparse.html#title2
                     logitp = projLatObs(it.row(),idtPoly[i]) + \
-                        phi(idtPoly[i], idaPoly[i]) + nu[idnPoly[i]] + \
+                        phi(idaPoly[i], idtPoly[i]) + nu[idnPoly[i]] + \
                         beta_agec[idaPoly[i]] + eta[idcPoly[i]];
                     p = exp(logitp) / (Type(1.) + exp(logitp));
                     nllPart += dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, false) * it.value();
@@ -221,7 +238,7 @@ Type objective_function<Type>::operator() ()
         if(moption == 1){
             for(int i=0; i<Npoly; i++){
                 logitp = projLatObs(idPoly[i],idtPoly[i]) + \
-                    phi(idtPoly[i], idaPoly[i]) + nu[idnPoly[i]] + \
+                    phi(idaPoly[i], idtPoly[i]) + nu[idnPoly[i]] + \
                     beta_agec[idaPoly[i]] + eta[idcPoly[i]];
                 p = exp(logitp) / (Type(1.) + exp(logitp));
                 nll -= dbinom(Type(yPoly[i]), Type(denomPoly[i]), p, true);
@@ -232,7 +249,7 @@ Type objective_function<Type>::operator() ()
             SparseMatrix<Type> RAprojPoly = AprojPoly.transpose();
             for(int i=0; i<Npoly; i++){
                 vector<Type> projLatObsFull = projLatObs.col(idtPoly[i]).array() + \
-                    phi(idtPoly[i], idaPoly[i]) + nu[idnPoly[i]] + \
+                    phi(idaPoly[i], idtPoly[i]) + nu[idnPoly[i]] + \
                     beta_agec[idaPoly[i]] + eta[idcPoly[i]];
                 vector<Type> projPObs = projLatObsFull.array().exp() / \
                     (Type(1.) + projLatObsFull.array().exp());

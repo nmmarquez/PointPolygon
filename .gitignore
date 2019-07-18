@@ -14,6 +14,7 @@
 demo/IHMEpresentation_files
 demo/generalPresentation_files
 demo/libs
+figures/*
 
 # Example code in package build process
 *-Ex.R
