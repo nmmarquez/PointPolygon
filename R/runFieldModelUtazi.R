@@ -112,6 +112,8 @@ runFieldModelUtazi <- function(
     stack.area <- inla.stack(
         tag='areal',
         data=list(y=shape3$obs, n=shape3$trials),
+        # A maps how yo get from the effects estimated to Areal data observation
+        # its a 1 for both non SPDE random effects and covariates.
         A=list(areaA,1,1),
         effects=list(
             s=1:field$spde$n.spde,

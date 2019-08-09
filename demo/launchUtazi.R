@@ -63,3 +63,35 @@ for(i in 1:nrow(paramDF2)){
     
     system(qsub)
 }
+
+for(i in 0:14){
+    modelname <- paste0("full_data_y", i)
+    
+    qsub <- paste(
+        "qsub", 
+        "-e ~/errors/",
+        "-o ~/outputs/",
+        "-l mem_free=200G -l m_mem_free=200G -P proj_geo_nodes_u5m",
+        "-l fthread=10 -l h_rt=05:00:00:00 -q geospatial.q",
+        "-N", modelname,
+        "/share/singularity-images/lbd/shells/singR.sh -m 10 -o 5 -e s",
+        "~/Documents/PointPolygon/demo/dataRun.R", i, "NA", sep=" ")
+    
+    system(qsub)
+}
+
+for(i in 0:9){
+    modelname <- paste0("full_data_reg", i)
+    
+    qsub <- paste(
+        "qsub", 
+        "-e ~/errors/",
+        "-o ~/outputs/",
+        "-l mem_free=200G -l m_mem_free=200G -P proj_geo_nodes_u5m",
+        "-l fthread=20 -l h_rt=05:00:00:00 -q geospatial.q",
+        "-N", modelname,
+        "/share/singularity-images/lbd/shells/singR.sh -m 10 -o 5 -e s",
+        "~/Documents/PointPolygon/demo/dataRun.R", "NA", i, sep=" ")
+    
+    system(qsub)
+}

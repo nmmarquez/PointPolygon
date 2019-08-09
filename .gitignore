@@ -11,6 +11,8 @@
 *.rda
 *.csv
 *.old
+*.RDS
+*.rds
 demo/IHMEpresentation_files
 demo/generalPresentation_files
 demo/libs

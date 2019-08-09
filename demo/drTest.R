@@ -1,4 +1,4 @@
-.libPaths(c("~/R3.5/", .libPaths()))
+.libPaths(c("~/R3.6/", .libPaths()))
 rm(list=ls())
 library(dplyr)
 library(tidyr)
@@ -36,7 +36,7 @@ modelname <- paste0(
 
 set.seed(seed)
 
-find_closest <- function(x1, x2) {
+find_closest <- function(x1, x2, fullDF) {
     
     toRad <- pi / 180
     lat1  <- x1[,2]  * toRad
@@ -156,7 +156,8 @@ ihmePolyDF <- read_csv("./demo/ihmeResampleDF.csv") %>%
                 select(as_tibble(field$spdf), -geometry), 
                 by = c("tidx", "id")) %>%
             select(x, y) %>%
-            as.matrix()
+            as.matrix(),
+        fullDF
     ) %>%
     tibble(id=.) %>%
     mutate(id=id-1) %>%

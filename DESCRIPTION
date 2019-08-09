@@ -23,6 +23,7 @@ Imports:
     tibble,
     arm,
     TMB,
+    RcppEigen,
     Matrix,
     tmbstan
 Suggests:
