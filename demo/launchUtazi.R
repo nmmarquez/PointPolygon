@@ -5,7 +5,7 @@ paramDF <- expand.grid(
     covVal = c(2, .4, -.5, .2, -2),
     covType = c("random", "spatial", "cluster"),
     M = seq(50, 300, by=50),
-    seed = 1:2)#1:10)
+    seed = 1:10)
 
 for(i in 1:nrow(paramDF)){
     modelname <- paste0(
@@ -54,14 +54,14 @@ for(i in 1:nrow(paramDF2)){
         "-N", modelname,
         "/share/singularity-images/lbd/shells/singR.sh -m 2 -o 4 -e s",
         "~/Documents/PointPolygon/demo/drTest.R", 
-        paramDF$rangeE[i],
-        paramDF$covVal[i],
-        paramDF$covType[i],
-        paramDF$seed[i],
+        paramDF2$rangeE[i],
+        paramDF2$covVal[i],
+        paramDF2$covType[i],
+        paramDF2$seed[i],
         
         sep=" ")
-    
-    system(qsub)
+
+        system(qsub)
 }
 
 for(i in 0:14){

@@ -1,4 +1,4 @@
-#define R_init_u5m
+
 #include <TMB.hpp>
 #include <Eigen/Sparse>
 #include <vector>
@@ -141,11 +141,26 @@ Type objective_function<Type>::operator() ()
 
     // Apply fixed effect and hyper-parameter priors
     if(priors == 1){
+        Type tempSum;
         for(int b=0; b<beta.size(); b++){
-            nll -= dnorm(beta[b], Type(0.0), Type(100.0), true);
+            nll -= dnorm(beta[b], Type(0.0), Type(10.0), true);
         }
-        nll -= dnorm(log_tau, Type(0.0), Type(100.0), true);
-        nll -= dnorm(log_kappa, Type(0.0), Type(100.0), true);
+        for(int p=0; p<log_sigma_phi.size(); p++){
+            nll -= dnorm(log_sigma_phi[p], Type(0.0), Type(2.), true);
+        }
+        for(int i=0; i<phi.dim(0); i++){
+            tempSum = Type(0.0);
+            for(int j=0; j<phi.dim(1); j++){
+                tempSum += phi(i,j);
+            }
+            nll -= dnorm(tempSum, Type(0.0), Type(.001), true);
+        }
+        nll -= dnorm(log_tau, Type(0.0), Type(10.0), true);
+        nll -= dnorm(logit_rho, Type(2.0), Type(5.0), true);
+        nll -= dnorm(log_kappa, Type(0.0), Type(10.0), true);
+        nll -= dnorm(log_sigma_eta, Type(0.0), Type(10.0), true);
+        nll -= dnorm(log_sigma_epsilon, Type(0.0), Type(10.0), true);
+        nll -= dnorm(log_sigma_nu, Type(0.0), Type(10.0), true);
     }
 
     std::cout << "Fixed Effect priors applied.\n";

@@ -4,7 +4,7 @@
 \alias{simulateFieldCI}
 \title{Estimate Confidence Intervals (CI) for Probability Field Via Simulation}
 \usage{
-simulateFieldCI(field, modelFit, draws = 1000)
+simulateFieldCI(field, modelFit, draws = 1000, chain = 1)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -12,6 +12,8 @@ simulateFieldCI(field, modelFit, draws = 1000)
 \item{modelFit}{fitted model object from the field}
 
 \item{draws}{int, number of draws for simulation to calculate CI's}
+
+\item{chain}{int, the chain to use if drawing inference from MCMC model}
 }
 \value{
 data.frame, mean, CI, and sd of underlying field.

@@ -19,6 +19,7 @@
 #' @param mcmc logical, default FALSE Should model be fit with MCMC. Not
 #' compatible with moption 2.
 #' @param AprojPoly sparseMatrix, sparse matrix with population weight information for polygons.
+#' @param shape3 shape to build the adjaceny matrix for when moption == 2
 #' @param start starting points of parameters.
 #' @param ... Further arguments to pass to tmbstan
 #' 
@@ -60,6 +61,7 @@ runFieldModel <- function(
     priors = FALSE,
     mcmc = FALSE,
     AprojPoly = NULL,
+    shape3 = NULL,
     start = list(),
     ...){
     model <- "PointPolygon"
@@ -76,18 +78,16 @@ runFieldModel <- function(
         moption <- 0
     }
     if(moption == 2){
-        if(field$nTimes > 1){
-            stop("Utazi Model Only Supports Single Year Analysis Currently.")
-        }
         fit <- runFieldModelUtazi(
-            field, 
-            pointDF,
-            polyDF,
-            moption,
-            verbose,
-            symbolic,
-            control,
-            rWidth)
+            field      = field, 
+            pointDF    = pointDF,
+            polyDF     = polyDF,
+            moption    = moption,
+            verbose    = verbose,
+            symbolic   = symbolic,
+            control    = control,
+            rWidth     = rWidth,
+            shape3     = shape3)
         
         return(fit)
     }

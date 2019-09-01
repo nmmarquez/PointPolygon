@@ -8,10 +8,11 @@ library(PointPolygon)
 library(sp)
 library(Rcpp)
 library(Matrix)
+library(INLA)
 setwd("~/Documents/PointPolygon/")
 sourceCpp("./demo/dist.cpp")
 load("./demo/prepData.rda")
-
+inla.setOption(pardiso.license = "~/pardiso.lic")
 nT <- 6
 
 args <- commandArgs(trailingOnly=TRUE)
@@ -19,12 +20,12 @@ args <- commandArgs(trailingOnly=TRUE)
 # for testing
 # rangeE <- .3
 # covVal <- 2
-# covType <- "random"
+# covType <- "spatial"
 # seed <- as.integer(123)
 
 rangeE <- as.numeric(args[1]) # range of spatial prces varies from {.2, .4, .6}
 covVal <- as.numeric(args[2]) # covariate effect in set {.2, .4, -.5, .2, -2}
-covType <- args[3] # either random spatial or cluster 
+covType <- args[3] # either random spatial or cluster
 seed <- as.integer(args[4]) # RNG
 
 modelname <- paste0(
@@ -65,7 +66,11 @@ field <- simField(
     nTimes = nT,
     rho = .75, shape=spDF)
 
-ggField(field)
+shape3 <- rgeos::gUnaryUnion(spDF, id = spDF$REG)
+shape3 <- SpatialPolygonsDataFrame(
+    shape3, data.frame(reg=as.numeric(names(shape3)), row.names=names(shape3)))
+shape3 <- spTransform(shape3, "+proj=longlat +ellps=WGS84 +no_defs")
+shape3$polyid <- shape3$reg - 1
 
 fullDF <- fullDF %>%
     rename(x=long, y=lat, oldid=id) %>%
@@ -188,6 +193,13 @@ AprojPoly <- syearWDF %>%
         x = .$popW,
         dims = c(max(.$row), max(.$col)))}
 
+field$spdf <- field$spdf %>% 
+    left_join(select(fullDF, id, strat, urban)) %>%
+    left_join(select(syearWDF, id, Population))
+
+utaziPolyDF <- polyDF %>%
+    mutate(polyid = (as.numeric(str_split(strat, "_", simplify = TRUE)[,1]))-1)
+
 ### The approaches that we want to test are as follows
 # 1 Mixture model
 # 2 IHME Resample
@@ -199,16 +211,20 @@ modelList <- list(
     `IHME Resample` = runFieldModel(
         field, pointDF, ihmePolyDF, moption=5, verbose=T
     ),
-    `Riemann` = runFieldModel(
-        field, pointDF, select(polyDF, -strat), moption=3, verbose=T,
-        AprojPoly=AprojPoly
-    ),
+    # `Riemann` = runFieldModel(
+    #     field, pointDF, select(polyDF, -strat), moption=3, verbose=T,
+    #     AprojPoly=AprojPoly
+    # ),
     `Ignore` = runFieldModel(
         field, pointDF, polyDF, moption=4, verbose=T, AprojPoly=AprojPoly
     ),
     `Known` = runFieldModel(
         field, pointDF, polyDF, moption=5, verbose=T, AprojPoly=AprojPoly
     )
+)
+
+modelList$Utazi <- runFieldModel(
+    field, pointDF, utaziPolyDF, moption=2, verbose=T, shape3 = shape3
 )
 
 modelList[["Mixture Model"]] <- runFieldModel(
@@ -220,7 +236,7 @@ modelList[["Mixture Model"]] <- runFieldModel(
 )
 
 unitFitList <- lapply(modelList, function(model){
-    simulateFieldCI(field, model)
+    simulateFieldCI(field, model, draws=100)
 })
 
 unitBetaList <- lapply(modelList, function(model){
@@ -243,7 +259,8 @@ provPredList <- lapply(modelList, function(model){
         model, 
         polygonList = lapply(1:nrow(aggShapes$provShape@data), function(i){
             sf::st_as_sf(aggShapes$provShape[i,])}),
-        popDF = mutate(select(syearWDF, -tidx), w=Population))
+        popDF = mutate(select(syearWDF, -tidx), w=Population),
+        draws=100)
 })
 
 regPredList <- lapply(modelList, function(model){
@@ -252,7 +269,8 @@ regPredList <- lapply(modelList, function(model){
         model, 
         polygonList = lapply(1:nrow(aggShapes$regShape@data), function(i){
             sf::st_as_sf(aggShapes$regShape[i,])}),
-        popDF = mutate(select(syearWDF, -tidx), w=Population))
+        popDF = mutate(select(syearWDF, -tidx), w=Population),
+        draws = 100)
 })
 
 
@@ -260,7 +278,7 @@ unitResults <- list(
     sim = field,
     pred = unitFitList,
     betas = unitBetaList,
-    model = modelList, # this takes up a lot of space so ignore for now
+    #model = modelList, # this takes up a lot of space so ignore for now
     converge = convergeList,
     covType = covType,
     rangeE = rangeE,
@@ -271,4 +289,4 @@ unitResults <- list(
     regPred = regPredList
 )
 
-saveRDS(unitResults, file=paste0("~/Data/spaceTimeTest2/", modelname))
+saveRDS(unitResults, file=paste0("~/Data/spaceTimeTest3/", modelname))

@@ -46,6 +46,7 @@ simulateBetas <- function(field, modelFit, draws=1000){
     }
     else{
         betaDF <- modelFit$summary.fixed[,c("mean", "sd")]
+        betaDF <- betaDF[startsWith(row.names(betaDF), "V"),]
         row.names(betaDF) <- NULL
         names(betaDF) <- c("betaHat", "betaStErr")
         betaDF$betaTV <- field$betas

@@ -32,9 +32,11 @@ simulateDataFieldCI <- function(modelFit, field, draws=1000){
   betaRows <- row.names(modelFit$sd$jointPrecision) == "beta"
   betaAgeRows <- row.names(modelFit$sd$jointPrecision) == "beta_age"
   zRows <- row.names(modelFit$sd$jointPrecision) == "z"
+  phiRows <- row.names(modelFit$sd$jointPrecision) == "phi"
   betaDraws <- parDraws[betaRows, ]
   betaAgeDraws <- parDraws[betaAgeRows, ]
   zDraws <- parDraws[zRows, ]
+  phiDraws <- parDraws[phiRows, ]
   nNod <- field$mesh$n
   projDraws <- t(do.call(rbind, lapply(1:field$nTimes, function(i){
     as.matrix(field$AprojField %*% zDraws[((i - 1) * nNod + 1):(i * nNod), ])
@@ -46,6 +48,17 @@ simulateDataFieldCI <- function(modelFit, field, draws=1000){
     if(i != 0){
       t_ <- t_ + betaAgeDraws[i,]
     }
+    if(sum(phiRows) > 0){
+      rIndex <- seq(i+1, ((ageGN + 1) * field$nTimes) - (ageGN - i), by=ageGN+1)
+      phiADraws <- phiDraws[rIndex,]
+      nPix <- nrow(filter(predDF, (aid == i) & (tidx==0)))
+      for(j in 1:field$nTimes){
+        j2 <- j-1
+        t_[,(j2*nPix+1):((j2+1)*nPix)] <- t_[,(j2*nPix+1):((j2+1)*nPix)] +
+          phiADraws[j,]
+      }
+    }
+    
     predDraws <- arm::invlogit(t_)
     predDF$mu[predDF$aid == i] <- apply(predDraws, 2, mean)
     predDF$sd[predDF$aid == i] <- apply(predDraws, 2, sd)

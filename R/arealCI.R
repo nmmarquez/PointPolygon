@@ -47,25 +47,6 @@ arealCI <- function(field, modelFit, polygonList=NULL, rWidth=NULL, draws=1000, 
             sf::st_as_sf(sectionedSPDF[i,])
         })
     }
-    if(modelFit$moption == 2){
-        if(field$nTimes > 1){
-            stop("Utazi Model Only Supports Single Year Analysis Currently.")
-        }
-        post.samples <- inla.posterior.sample(1000, modelFit)
-        index.pred <- inla.stack.index(modelFit$stack, "pred")$data
-        pSamples <- arm::invlogit(sapply(post.samples, function(z){
-            z$latent[index.pred,]}))
-        resultsDF <- data.frame(
-            mu = apply(pSamples, 1, mean),
-            sd = apply(pSamples, 1, sd),
-            lwr = apply(pSamples, 1, quantile, probs=.025),
-            upr = apply(pSamples, 1, quantile, probs=.975),
-            id = field$spdf$id,
-            trueValue = field$spdf$theta
-        )
-        row.names(resultsDF) <- NULL
-        return(resultsDF)
-    }
     if(is.null(popDF)){
         w <- rep(1, nrow(field$spdf))
     }
@@ -75,23 +56,31 @@ arealCI <- function(field, modelFit, polygonList=NULL, rWidth=NULL, draws=1000, 
             left_join(popDF) %>%
             pull(w)
     }
-    modelLRP <- buildModelInputs(field, model=FALSE)
-    
-    parDraws <- t(ar.matrix::sim.AR(draws, modelFit$sd$jointPrecision)) +
-        c(modelFit$opt$par, modelFit$sd$par.random)
-    
-    betaRows <- row.names(modelFit$sd$jointPrecision) == "beta"
-    zRows <- row.names(modelFit$sd$jointPrecision) == "z"
-    
-    betaDraws <- parDraws[betaRows,]
-    zDraws <- parDraws[zRows,]
-    nNod <- field$mesh$n
-    
-    fieldProbs <- arm::invlogit(
-        modelLRP$Data$covs %*% betaDraws +
-            do.call(rbind, lapply(1:field$nTimes, function(i){as.matrix(
-                modelLRP$Data$AprojObs %*% zDraws[((i-1)*nNod + 1):(i*nNod),])
-            })))
+    if(modelFit$moption == 2){
+        post.samples <- inla.posterior.sample(draws, modelFit)
+        index.pred <- inla.stack.index(modelFit$stack, "pred")$data
+        fieldProbs <- arm::invlogit(sapply(post.samples, function(z){
+            z$latent[index.pred,]}))
+    }
+    else{
+        modelLRP <- buildModelInputs(field, model=FALSE)
+        
+        parDraws <- t(ar.matrix::sim.AR(draws, modelFit$sd$jointPrecision)) +
+            c(modelFit$opt$par, modelFit$sd$par.random)
+        
+        betaRows <- row.names(modelFit$sd$jointPrecision) == "beta"
+        zRows <- row.names(modelFit$sd$jointPrecision) == "z"
+        
+        betaDraws <- parDraws[betaRows,]
+        zDraws <- parDraws[zRows,]
+        nNod <- field$mesh$n
+        
+        fieldProbs <- arm::invlogit(
+            modelLRP$Data$covs %*% betaDraws +
+                do.call(rbind, lapply(1:field$nTimes, function(i){as.matrix(
+                    modelLRP$Data$AprojObs %*% zDraws[((i-1)*nNod + 1):(i*nNod),])
+                })))
+    }
     
     ciDF <- bind_rows(lapply(1:length(polygonList), function(i){
         subSPDF <- polygonList[[i]]

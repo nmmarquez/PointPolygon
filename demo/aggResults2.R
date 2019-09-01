@@ -1,4 +1,4 @@
-.libPaths(c("~/R3.5/", .libPaths()))
+.libPaths(c("~/R3.6/", .libPaths()))
 rm(list=ls())
 library(tibble)
 library(dplyr)
@@ -10,7 +10,7 @@ library(tidyr)
 library(ggplot2)
 library(sf)
 
-rdsPathList <- list.files("~/Data/spaceTimeTest2/", full.names=TRUE)
+rdsPathList <- list.files("~/Data/spaceTimeTest3/", full.names=TRUE)
 
 resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
     print(f_)
@@ -155,11 +155,11 @@ aggPlotsDR <- list()
 
 
 (aggPlotsDR$rmseRelative <- resultsDF %>%
-    filter(model=="IHME Resample") %>%
+    filter(model=="Utazi") %>%
     select(covType:rmse) %>%
     rename(rmseUtazi=rmse) %>%
     right_join(select(resultsDF, covType:rmse, model, converge)) %>%
-    filter(converge == 0 & rmse <.3) %>%
+    filter(converge == 0 & model != "Ignore") %>%#rmse <.3) %>%
     mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
     group_by(covType, model, rangeE) %>%
     summarize(
@@ -177,13 +177,13 @@ aggPlotsDR <- list()
     coord_flip() +
     geom_hline(yintercept=0, linetype=2) +
     labs(x="Model", y="Relative Improvement") +
-    ggtitle("RMSE: Margin of Improvement Over IHME Resample Model") +
+    ggtitle("RMSE: Margin of Improvement Over Utazi Model") +
     theme(panel.spacing.y = unit(0, "lines")) +
     guides(color=FALSE) +
     geom_text(aes(y=upr), nudge_y = .04))
 
 (aggPlotsDR$rmseRelativePaper <- resultsDF %>%
-        filter(model=="IHME Resample") %>%
+        filter(model=="Utazi") %>%
         select(covType:rmse) %>%
         rename(rmseUtazi=rmse) %>%
         right_join(select(resultsDF, covType:rmse, model, converge)) %>%
@@ -205,17 +205,17 @@ aggPlotsDR <- list()
         coord_flip() +
         geom_hline(yintercept=0, linetype=2) +
         labs(x="Model", y="Relative Improvement") +
-        ggtitle("RMSE: Margin of Improvement Over IHME Resample Model") +
+        ggtitle("RMSE: Margin of Improvement Over Utazi Model") +
         theme(panel.spacing.y = unit(0, "lines")) +
         guides(color=FALSE) +
         geom_text(aes(y=upr), nudge_y = .04))
 
 (aggPlotsDR$rmseProvRelative <- resultsDF %>%
-        filter(model=="IHME Resample") %>%
+        filter(model=="Utazi") %>%
         select(covType:seed, provrmse) %>%
         rename(rmseUtazi=provrmse) %>%
         right_join(select(resultsDF, covType:seed, provrmse, model, converge)) %>%
-        filter(converge == 0 & provrmse <.3) %>%
+        filter(converge == 0 & model != "Ignore") %>%
         mutate(improveRatio=(rmseUtazi-provrmse)/rmseUtazi) %>%
         group_by(covType, model, rangeE) %>%
         summarize(
@@ -233,7 +233,7 @@ aggPlotsDR <- list()
         coord_flip() +
         geom_hline(yintercept=0, linetype=2) +
         labs(x="Model", y="Relative Improvement") +
-        ggtitle("Province RMSE: Margin of Improvement Over IHME Resample Model") +
+        ggtitle("Province RMSE: Margin of Improvement Over Utazi Model") +
         theme(panel.spacing.y = unit(0, "lines")) +
         guides(color=FALSE) +
         geom_text(aes(y=upr), nudge_y = .06))
@@ -261,13 +261,13 @@ aggPlotsDR <- list()
         coord_flip() +
         geom_hline(yintercept=0, linetype=2) +
         labs(x="Model", y="Relative Improvement") +
-        ggtitle("Province RMSE: Margin of Improvement Over IHME Resample Model") +
+        ggtitle("Province RMSE: Margin of Improvement Over Utazi Model") +
         theme(panel.spacing.y = unit(0, "lines")) +
         guides(color=FALSE) +
         geom_text(aes(y=upr), nudge_y = .06))
 
 (aggPlotsDR$rmseSingleProvRelativePaper <- resultsDF %>%
-        filter(model=="IHME Resample") %>%
+        filter(model=="Utazi") %>%
         select(covType:seed, provrmse) %>%
         rename(rmseUtazi=provrmse) %>%
         right_join(select(resultsDF, covType:seed, provrmse, model, converge)) %>%
@@ -429,7 +429,7 @@ aggPlotsDR <- list()
 
 (aggPlotsDR$runtime <- resultsDF %>%
     select(covType:seed, model, runtime) %>%
-    filter(model %in% c("Mixture Model", "Riemann")) %>%
+    filter(model %in% c("Mixture Model", "Utazi", "Ignore")) %>%
     left_join(
         resultsDF %>%
             filter(model %in% c("IHME Resample")) %>%

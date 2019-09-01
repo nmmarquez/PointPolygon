@@ -89,7 +89,7 @@ polyDF <- polyDF %>%
     mutate(sid=max(pointDF$sid) + 1) %>%
     mutate(cid=group_indices(., psu) + max(pointDF$cid)) %>%
     mutate(polyid=as.numeric(as.factor(strat))-1) %>%
-    select(denom, obs, id, yid, aid, sid, cid, polyid, strat)
+    select(denom, obs, id, yid, aid, sid, cid, polyid, strat, weight)
 
 # Turns out IHME only has one point or each large admin level :/
 ihmePolyDF <- read_csv("../demo/ihmeResampleDF.csv") %>%
@@ -118,6 +118,21 @@ ihmePolyDF <- read_csv("../demo/ihmeResampleDF.csv") %>%
         by="location_code") %>%
     select(-id, -polyid, -location_code) %>%
     rename(id=trueid)
+
+utaziPolyDF <- polyDF %>%
+    group_by(yid, aid, sid, strat) %>%
+    summarize(
+        obs = sum(weight * obs),
+        denom = sum(weight * denom)) %>%
+    mutate(urban=(str_split(strat, "_", simplify = T)[,2] == "1")+0) %>%
+    mutate(polyid=(as.numeric(str_split(strat, "_", simplify = T)[,1]))-1) %>%
+    ungroup()
+
+shape3 <- rgeos::gUnaryUnion(spDF, id = spDF$REG)
+shape3 <- SpatialPolygonsDataFrame(
+    shape3, data.frame(reg=as.numeric(names(shape3)), row.names=names(shape3)))
+shape3 <- spTransform(shape3, "+proj=longlat +ellps=WGS84 +no_defs")
+shape3$polyid <- shape3$reg - 1
 
 stratOrder <- arrange(
     as.data.frame(unique(select(polyDF, polyid, strat))), polyid)
@@ -294,42 +309,87 @@ modelRun <- function(
         stack=NULL)
 }
 
-modelList <- list()
-
-modelList$point <- modelRun(
-    pointDF, moption=0, nugget=F, time_structured=F, time_unstructured=F)
-
-modelList$mixture <- modelRun(
-    pointDF, polyDF=polyDF, nugget=F, time_structured=F, 
-    time_unstructured=F, survey_effect = T)
-
-modelList$resample <- modelRun(
-    bind_rows(pointDF, ihmePolyDF), nugget=F, time_structured=F, moption = 0,
-    time_unstructured=F, survey_effect = T)
-
-saveRDS(
-    list(
-        pointDF=pointDF, polyDF=polyDF, ihmePolyDF=ihmePolyDF,
-        field=field, modelList=modelList),
-    sprintf(
-        "~/Documents/PointPolygon/demo/data_run/model_y%s_r%s_.RDS",
-        yearHO,
-        regHO))
-
-save(
-    fullRun, pointDF, polyDF, field,
-    file="~/Documents/PointPolygon/demo/dataRun.Rdata")
-
-# predDF <- simulateDataFieldCI(fullRun, field)
+test <- runDataUtazi(
+    field, pointDF = pointDF, polyDF_ = utaziPolyDF, shape3 = shape3,
+    fullDF = fullDF, timeStructured = FALSE)
+# 
+# modelList <- list()
+# modelList$noRE <- list()
+# modelList$temporal <- list()
+# modelList$full <- list()
+# 
+# modelList$noRE$point <- modelRun(
+#     pointDF, polyDF = NULL, nugget = FALSE, time_structured = FALSE, 
+#     time_unstructured = FALSE, survey_effect = FALSE, priors = 1)
+# 
+# modelList$noRE$mixture <- modelRun(
+#     pointDF, polyDF = polyDF, nugget = FALSE, time_structured=FALSE, 
+#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
+# 
+# modelList$noRE$resample <- modelRun(
+#     bind_rows(pointDF, ihmePolyDF), nugget = FALSE, time_structured=FALSE, 
+#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
+# 
+# modelList$temporal$point <- modelRun(
+#     pointDF, polyDF = NULL, nugget = FALSE, time_structured = TRUE, 
+#     time_unstructured = FALSE, survey_effect = FALSE, priors = 1)
+# 
+# modelList$temporal$mixture <- modelRun(
+#     pointDF, polyDF = polyDF, nugget = FALSE, time_structured=TRUE, 
+#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
+# 
+# modelList$temporal$resample <- modelRun(
+#     bind_rows(pointDF, ihmePolyDF), nugget = FALSE, time_structured=TRUE, 
+#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
+# 
+# modelList$full$point <- modelRun(
+#     pointDF, polyDF = NULL, nugget = TRUE, time_structured = TRUE, 
+#     time_unstructured = FALSE, survey_effect = FALSE, priors = 1)
+# 
+# modelList$full$mixture <- modelRun(
+#     pointDF, polyDF = polyDF, nugget = TRUE, time_structured=TRUE, 
+#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
+# 
+# modelList$full$resample <- modelRun(
+#     bind_rows(pointDF, ihmePolyDF), nugget = TRUE, time_structured=TRUE, 
+#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
+# 
+# saveRDS(
+#     list(
+#         pointDF=pointDF, polyDF=polyDF, ihmePolyDF=ihmePolyDF,
+#         field=field, modelList=modelList),
+#     sprintf(
+#         "~/Documents/PointPolygon/demo/data_run/re_nonug_model_y%s_r%s_.RDS",
+#         yearHO,
+#         regHO))
+# 
+# library(ggplot2)
+# predDF <- simulateDataFieldCI(modelList$mixture, field)
 # 
 # predDF %>%
 #     {left_join(field$spdf, .)} %>%
-#     ggplot(aes(x, y, fill = log(mu))) + 
-#     geom_raster() + 
-#     coord_equal() + 
-#     theme_void() + 
-#     scale_fill_distiller(palette = "Spectral") + 
+#     ggplot(aes(x, y, fill = mu)) +
+#     geom_raster() +
+#     coord_equal() +
+#     theme_void() +
+#     scale_fill_distiller(palette = "Spectral") +
 #     facet_grid(aid~tidx)
+# 
+# predDF %>%
+#     group_by(id, tidx) %>%
+#     # This is not correct look into this later
+#     summarize(
+#         mu=1-prod(1-mu),
+#         lwr=1-prod(1-lwr),
+#         uprr=1-prod(1-upr)) %>%
+#     mutate(Year=tidx+2000) %>%
+#     {left_join(field$spdf, .)} %>%
+#     ggplot(aes(x, y, fill = mu)) +
+#     geom_raster() +
+#     coord_equal() +
+#     theme_void() +
+#     scale_fill_distiller(palette = "Spectral") +
+#     facet_wrap(~Year)
 # 
 # yearWDF %>%
 #     rename(oldid=id) %>%
