@@ -7,6 +7,7 @@
 #' @param field field object which simulated underlying data
 #' @param modelFit fitted model object from the field
 #' @param draws int, number of draws for simulation to calculate CI's
+#' @param agg5q0 logical, collpase age groups to 5q0?
 #' 
 #' @return data.frame, mean, CI, and sd of underlying field.
 #' 
@@ -16,7 +17,7 @@
 #' 
 #' @export
 
-simulateDataFieldCI <- function(modelFit, field, draws=1000){
+simulateDataFieldCI <- function(modelFit, field, draws=1000, agg5q0=FALSE){
   parDraws <- t(ar.matrix::sim.AR(draws, modelFit$sd$jointPrecision)) + 
     c(modelFit$opt$par, modelFit$sd$par.random)
   
@@ -41,6 +42,8 @@ simulateDataFieldCI <- function(modelFit, field, draws=1000){
   projDraws <- t(do.call(rbind, lapply(1:field$nTimes, function(i){
     as.matrix(field$AprojField %*% zDraws[((i - 1) * nNod + 1):(i * nNod), ])
   })))
+
+  predDraws <- 1
   
   for(i in 0:ageGN){
     t_ <- projDraws + betaDraws[1,] +
@@ -59,12 +62,31 @@ simulateDataFieldCI <- function(modelFit, field, draws=1000){
       }
     }
     
-    predDraws <- arm::invlogit(t_)
-    predDF$mu[predDF$aid == i] <- apply(predDraws, 2, mean)
-    predDF$sd[predDF$aid == i] <- apply(predDraws, 2, sd)
-    predDF$lwr[predDF$aid==i] <- apply(predDraws, 2, quantile, probs=.025)
-    predDF$upr[predDF$aid==i] <- apply(predDraws, 2, quantile, probs=.975)
+    if(!agg5q0){
+      predDraws <- arm::invlogit(t_)
+      predDF$mu[predDF$aid == i] <- apply(predDraws, 2, mean)
+      predDF$sd[predDF$aid == i] <- apply(predDraws, 2, sd)
+      predDF$lwr[predDF$aid==i] <- apply(predDraws, 2, quantile, probs=.025)
+      predDF$upr[predDF$aid==i] <- apply(predDraws, 2, quantile, probs=.975)
+    }
+    else{
+      predDraws <- predDraws * (1-arm::invlogit(t_))
+    }
   }
   
+  if(agg5q0){
+
+    predDraws <- 1 - predDraws
+
+    predDF <- field$spdf %>%
+      as_tibble() %>%
+      select(id, tidx, urban) %>%
+      mutate(aid=99) %>%
+      mutate(mu=apply(predDraws, 2, mean)) %>%
+      mutate(sd=apply(predDraws, 2, sd)) %>%
+      mutate(lwr=apply(predDraws, 2, quantile, probs=.025)) %>%
+      mutate(upr=apply(predDraws, 2, quantile, probs=.975))
+  }
+
   predDF
 }

@@ -180,7 +180,8 @@ runDataUtazi <- function(
               cbind(dummify(.$aid)) %>%
               cbind(timeify(.$yid))))
   
-  stack.all <- inla.stack(stack.points, stack.area, stack.pred)
+  #stack.all <- inla.stack(stack.points, stack.area, stack.pred)
+  stack.all <- inla.stack(stack.points, stack.area)
   
   f_ <- y ~ -1 + INT + urban + as.factor(aid) +
       f(
@@ -195,8 +196,7 @@ runDataUtazi <- function(
           sa,
           model = "besagproper2", 
           graph = area.poly.adj,
-          hyper=list(prec=list(prior="loggamma", param=c(1,0.01)))) +
-      f(sid, model="iid")
+          hyper=list(prec=list(prior="loggamma", param=c(1,0.01))))
   
   if(timeStructured){
       f_ <- y ~ -1 + INT + urban + as.factor(aid) +

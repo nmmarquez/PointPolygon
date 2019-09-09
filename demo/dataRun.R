@@ -309,59 +309,214 @@ modelRun <- function(
         stack=NULL)
 }
 
-test <- runDataUtazi(
-    field, pointDF = pointDF, polyDF_ = utaziPolyDF, shape3 = shape3,
-    fullDF = fullDF, timeStructured = FALSE)
-# 
-# modelList <- list()
-# modelList$noRE <- list()
-# modelList$temporal <- list()
-# modelList$full <- list()
-# 
-# modelList$noRE$point <- modelRun(
-#     pointDF, polyDF = NULL, nugget = FALSE, time_structured = FALSE, 
-#     time_unstructured = FALSE, survey_effect = FALSE, priors = 1)
-# 
-# modelList$noRE$mixture <- modelRun(
-#     pointDF, polyDF = polyDF, nugget = FALSE, time_structured=FALSE, 
-#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
-# 
-# modelList$noRE$resample <- modelRun(
-#     bind_rows(pointDF, ihmePolyDF), nugget = FALSE, time_structured=FALSE, 
-#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
-# 
-# modelList$temporal$point <- modelRun(
-#     pointDF, polyDF = NULL, nugget = FALSE, time_structured = TRUE, 
-#     time_unstructured = FALSE, survey_effect = FALSE, priors = 1)
-# 
-# modelList$temporal$mixture <- modelRun(
-#     pointDF, polyDF = polyDF, nugget = FALSE, time_structured=TRUE, 
-#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
-# 
-# modelList$temporal$resample <- modelRun(
-#     bind_rows(pointDF, ihmePolyDF), nugget = FALSE, time_structured=TRUE, 
-#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
-# 
-# modelList$full$point <- modelRun(
-#     pointDF, polyDF = NULL, nugget = TRUE, time_structured = TRUE, 
-#     time_unstructured = FALSE, survey_effect = FALSE, priors = 1)
-# 
-# modelList$full$mixture <- modelRun(
-#     pointDF, polyDF = polyDF, nugget = TRUE, time_structured=TRUE, 
-#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
-# 
-# modelList$full$resample <- modelRun(
-#     bind_rows(pointDF, ihmePolyDF), nugget = TRUE, time_structured=TRUE, 
-#     time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
-# 
-# saveRDS(
-#     list(
-#         pointDF=pointDF, polyDF=polyDF, ihmePolyDF=ihmePolyDF,
-#         field=field, modelList=modelList),
-#     sprintf(
-#         "~/Documents/PointPolygon/demo/data_run/re_nonug_model_y%s_r%s_.RDS",
-#         yearHO,
-#         regHO))
+# test <- runDataUtazi(
+#     field, pointDF = pointDF, polyDF_ = utaziPolyDF, shape3 = shape3,
+#     fullDF = fullDF, timeStructured = FALSE)
+
+modelList <- list()
+modelList$noRE <- list()
+modelList$temporal <- list()
+modelList$full <- list()
+
+modelList$noRE$point <- modelRun(
+    pointDF, polyDF = NULL, nugget = FALSE, time_structured = FALSE,
+    time_unstructured = FALSE, survey_effect = FALSE, priors = 0)
+
+modelList$noRE$mixture <- modelRun(
+    pointDF, polyDF = polyDF, nugget = FALSE, time_structured=FALSE,
+    time_unstructured = FALSE, survey_effect = TRUE, priors = 0)
+
+modelList$noRE$resample <- modelRun(
+    bind_rows(pointDF, ihmePolyDF), nugget = FALSE, time_structured=FALSE,
+    time_unstructured = FALSE, survey_effect = TRUE, priors = 0)
+
+modelList$temporal$point <- modelRun(
+    pointDF, polyDF = NULL, nugget = FALSE, time_structured = TRUE,
+    time_unstructured = FALSE, survey_effect = FALSE, priors = 1)
+
+modelList$temporal$mixture <- modelRun(
+    pointDF, polyDF = polyDF, nugget = FALSE, time_structured=TRUE,
+    time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
+
+modelList$temporal$resample <- modelRun(
+    bind_rows(pointDF, ihmePolyDF), nugget = FALSE, time_structured=TRUE,
+    time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
+
+modelList$full$point <- modelRun(
+    pointDF, polyDF = NULL, nugget = TRUE, time_structured = TRUE,
+    time_unstructured = FALSE, survey_effect = FALSE, priors = 1)
+
+modelList$full$mixture <- modelRun(
+    pointDF, polyDF = polyDF, nugget = TRUE, time_structured=TRUE,
+    time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
+
+modelList$full$resample <- modelRun(
+    bind_rows(pointDF, ihmePolyDF), nugget = TRUE, time_structured=TRUE,
+    time_unstructured = FALSE, survey_effect = TRUE, priors = 1)
+
+predList <- list()
+predList$noRE <- lapply(modelList$noRE, simulateDataFieldCI, field=field)
+predList$temporal <- lapply(modelList$temporal, simulateDataFieldCI, field=field)
+predList$full <- lapply(modelList$full, simulateDataFieldCI, field=field)
+
+saveRDS(
+    list(
+        pointDF=pointDF, polyDF=polyDF, ihmePolyDF=ihmePolyDF,
+        field=field, modelList=modelList, preds=predList),
+    sprintf(
+        "~/Data/dataRun/model_y%s_r%s_.RDS",
+        yearHO,
+        regHO))
+
+
+# Getting the lowest score here is going to tell us which model performed the 
+# best out of sample
+# pointDF %>%
+#     rename(tidx = yid) %>%
+#     left_join(predList$noRE$point) %>%
+#     mutate(nll=-dbinom(obs, denom, mu, log=T)) %>%
+#     pull(nll) %>%
+#     sum
+
+oosDF <- bind_rows(lapply(0:14, function(i){
+    modRes <- readRDS(sprintf("~/Data/dataRun/model_y%s_r%s_.RDS", i, "NA"))
+    print(i)
+
+    bind_rows(
+        bind_rows(lapply(names(modRes$preds$noRE), function(n){
+            pointDF %>%
+                filter(yid == i) %>%
+                rename(tidx = yid) %>%
+                left_join(modRes$preds$noRE[[n]]) %>%
+                mutate(nll=-dbinom(obs, denom, mu, log=T)) %>%
+                summarize(nll=sum(nll)) %>%
+                mutate(pars="noRE", method=n)
+        })),
+
+        bind_rows(lapply(names(modRes$preds$temporal), function(n){
+            pointDF %>%
+                filter(yid == i) %>%
+                rename(tidx = yid) %>%
+                left_join(modRes$preds$temporal[[n]]) %>%
+                mutate(nll=-dbinom(obs, denom, mu, log=T)) %>%
+                summarize(nll=sum(nll)) %>%
+                mutate(pars="temporal", method=n)
+        })),
+
+        bind_rows(lapply(names(modRes$preds$full), function(n){
+            pointDF %>%
+                filter(yid == i) %>%
+                rename(tidx = yid) %>%
+                left_join(modRes$preds$full[[n]]) %>%
+                mutate(nll=-dbinom(obs, denom, mu, log=T)) %>%
+                summarize(nll=sum(nll)) %>%
+                mutate(pars="full", method=n)
+        }))) %>%
+        mutate(yid=i)
+}))
+
+oosDF %>%
+    group_by(yid) %>%
+    mutate(ismin=min(nll) == nll) %>%
+    filter(ismin) %>%
+    group_by(method, pars) %>%
+    summarize(N=n()) %>%
+    arrange(-N)
+
+oosRegDF <- bind_rows(lapply(0:9, function(i){
+    modRes <- readRDS(sprintf("~/Data/dataRun/model_y%s_r%s_.RDS", "NA", i))
+    print(i)
+    
+    pointDF_ <- pointDF %>%
+        left_join(fullDF) %>%
+        mutate(polyid=reg-1)
+    
+    bind_rows(
+        bind_rows(lapply(names(modRes$preds$noRE), function(n){
+            pointDF_ %>%
+                filter(polyid == i) %>%
+                rename(tidx = yid) %>%
+                left_join(modRes$preds$noRE[[n]]) %>%
+                mutate(nll=-dbinom(obs, denom, mu, log=T)) %>%
+                summarize(nll=sum(nll)) %>%
+                mutate(pars="noRE", method=n)
+        })),
+        
+        bind_rows(lapply(names(modRes$preds$temporal), function(n){
+            pointDF_ %>%
+                filter(polyid == i) %>%
+                rename(tidx = yid) %>%
+                left_join(modRes$preds$temporal[[n]]) %>%
+                mutate(nll=-dbinom(obs, denom, mu, log=T)) %>%
+                summarize(nll=sum(nll)) %>%
+                mutate(pars="temporal", method=n)
+        })),
+        
+        bind_rows(lapply(names(modRes$preds$full), function(n){
+            pointDF_ %>%
+                filter(polyid == i) %>%
+                rename(tidx = yid) %>%
+                left_join(modRes$preds$full[[n]]) %>%
+                mutate(nll=-dbinom(obs, denom, mu, log=T)) %>%
+                summarize(nll=sum(nll)) %>%
+                mutate(pars="full", method=n)
+        }))) %>%
+        mutate(polyid=i)
+}))
+
+oosRegDF %>%
+    group_by(polyid) %>%
+    mutate(ismin=min(nll) == nll) %>%
+    filter(ismin) %>%
+    group_by(method, pars) %>%
+    summarize(N=n()) %>%
+    arrange(-N)
+
+# Best model is mixture with temporal effects
+modelRes <- readRDS("~/Data/dataRun/model_yNA_rNA_.RDS")
+aggShapes <- readRDS("../demo/aggShapes.Rds")
+ 
+library(ggplot2)
+
+predDF2 <- simulateDataFieldCI(
+    modelRes$modelList$temporal$mixture, field, agg5q0 = T)
+
+predDF2 %>%
+    {left_join(field$spdf, .)} %>%
+    ggplot(aes(x, y, fill = mu)) +
+    geom_raster() +
+    coord_equal() +
+    theme_void() +
+    scale_fill_distiller(palette = "Spectral") +
+    facet_wrap(~tidx)
+
+provPredList <- arealDataCI(
+    modelRes$modelList$temporal$mixture, 
+    field,
+    agg5q0 = TRUE,
+    polygonList = lapply(1:nrow(aggShapes$provShape@data), function(i){
+        sf::st_as_sf(aggShapes$provShape[i,])}),
+    popDF = mutate(select(syearWDF, -tidx), w=Population),
+    draws=1000)
+
+st_as_sf(aggShapes$provShape) %>%
+    mutate(polyid=as.numeric(Prov)-1) %>%
+    right_join(provPredList) %>%
+    ggplot() +
+    geom_sf(aes(fill=mu)) +
+    theme_void() +
+    scale_fill_distiller(palette = "Spectral") +
+    facet_wrap(~tidx)
+
+# predDF <- simulateDataFieldCI(modelList$noRE$point, field)
+# predDF2 <- simulateDataFieldCI(modelList$noRE$point, field, agg5q0 = T)
+# provPredDF <- arealDataCI(
+#         field, 
+#         modelList$noRE$point, 
+#         polygonList = lapply(1:nrow(aggShapes$provShape@data), function(i){
+#             sf::st_as_sf(aggShapes$provShape[i,])}),
+#         popDF = mutate(select(syearWDF, -tidx), w=Population),
+#         draws=100)
 # 
 # library(ggplot2)
 # predDF <- simulateDataFieldCI(modelList$mixture, field)

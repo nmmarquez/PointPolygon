@@ -92,7 +92,7 @@ arealCI <- function(field, modelFit, polygonList=NULL, rWidth=NULL, draws=1000, 
             filter(isPresent) %>%
             dplyr::as_tibble() %>%
             select(tidx, id)
-        
+
         bind_rows(lapply(unique(pointsDF$tidx), function(t){
             ridx <- pointsDF %>%
                 filter(tidx == t) %>%
@@ -103,9 +103,9 @@ arealCI <- function(field, modelFit, polygonList=NULL, rWidth=NULL, draws=1000, 
                 mutate(present=!is.na(present)) %>%
                 pull(present) %>%
                 which()
-            
+
             subFieldProbs <- apply(fieldProbs[ridx,], 2, weighted.mean, w=w[ridx])
-            
+
             data.frame(
                 mu = mean(subFieldProbs),
                 sd = stats::sd(subFieldProbs),

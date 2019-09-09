@@ -95,3 +95,14 @@ for(i in 0:9){
     
     system(qsub)
 }
+
+system(paste(
+    "qsub", 
+    "-e ~/errors/",
+    "-o ~/outputs/",
+    "-l mem_free=200G -l m_mem_free=200G -P proj_geo_nodes_u5m",
+    "-l fthread=20 -l h_rt=05:00:00:00 -q geospatial.q",
+    "-N", "full_data",
+    "/share/singularity-images/lbd/shells/singR.sh -m 10 -o 5 -e s",
+    "~/Documents/PointPolygon/demo/dataRun.R", "NA", "NA", sep=" "
+))

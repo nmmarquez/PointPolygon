@@ -2,6 +2,10 @@
 .Rhistory
 .Rapp.history
 
+# data folders
+demo/DRBR61DT
+demo/Dominican\ Republic_MICS5_Datasets
+
 # Session Data files
 *.RData
 *.Rdata
@@ -13,6 +17,8 @@
 *.old
 *.RDS
 *.rds
+*.zip
+*.pdf
 demo/IHMEpresentation_files
 demo/generalPresentation_files
 demo/libs

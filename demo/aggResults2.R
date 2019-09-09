@@ -362,7 +362,7 @@ aggPlotsDR <- list()
     guides(color=FALSE))
 
 (aggPlotsDR$biasPaper <- resultsDF %>%
-        filter(converge == 0 & model != "Riemann") %>%
+        filter(converge == 0 & model != "Ignore") %>%
         group_by(covType, model, rangeE) %>%
         summarize(
             mu = mean(bias),
@@ -429,10 +429,10 @@ aggPlotsDR <- list()
 
 (aggPlotsDR$runtime <- resultsDF %>%
     select(covType:seed, model, runtime) %>%
-    filter(model %in% c("Mixture Model", "Utazi", "Ignore")) %>%
+    filter(model %in% c("Mixture Model", "Utazi", "Ignore", "IHME Resample")) %>%
     left_join(
         resultsDF %>%
-            filter(model %in% c("IHME Resample")) %>%
+            filter(model %in% c("Known")) %>%
             select(covType:seed, runtime) %>%
             rename(IHME=runtime), 
         by=c("covType", "covVal", "rangeE", "seed")) %>%
@@ -441,6 +441,7 @@ aggPlotsDR <- list()
     geom_abline() +
     theme_classic() +
     facet_wrap(~model, scales="free_y") +
-    labs(x="IHME Resample Runtime", y="Runtime"))
+    labs(x="Known Runtime", y="Runtime") + 
+    expand_limits(x = 0, y = 0))
 
 write_rds(aggPlotsDR, "~/Documents/PointPolygon/demo/aggplotsDR.Rds")
