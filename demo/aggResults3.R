@@ -1,3 +1,11 @@
+# TODO: 
+# 1) Check intercept values across the models
+# 2) check the differnence in the gp vs the RW2
+# 3) Check possibility of constraints
+# 4) check sum of all random effects RW and GP
+# 5) Try resmpling more points
+# 6) Map out the resampled points to pop surface
+
 .libPaths(c("~/R3.6/", .libPaths()))
 rm(list=ls())
 library(dplyr)
@@ -14,9 +22,8 @@ library(sparseMVN)
 library(SUMMER)
 library(Biograph)
 library(haven)
-setwd("~/Documents/PointPolygon/")
+library(plotly)
 load("./demo/prepData.rda")
-
 
 maxYear <- 2014
 minYear <- 2000
@@ -189,6 +196,9 @@ results$predDF5q0 <- simulateDataFieldCI(
 results$predDF5q0Resample <- simulateDataFieldCI(
     modelRes$modelList$temporal$resample, field, agg5q0 = T)
 
+results$predDF5q0Point <- simulateDataFieldCI(
+    modelRes$modelList$temporal$point, field, agg5q0 = T)
+
 results$Map <- results$predDF5q0 %>%
     {left_join(field$spdf, .)} %>%
     ggplot(aes(x, y, fill = mu)) +
@@ -199,6 +209,15 @@ results$Map <- results$predDF5q0 %>%
     facet_wrap(~tidx)
 
 results$MapResample <- results$predDF5q0Resample %>%
+    {left_join(field$spdf, .)} %>%
+    ggplot(aes(x, y, fill = mu)) +
+    geom_raster() +
+    coord_equal() +
+    theme_void() +
+    scale_fill_distiller(palette = "Spectral") +
+    facet_wrap(~tidx)
+
+results$MapPoint <- results$predDF5q0Point %>%
     {left_join(field$spdf, .)} %>%
     ggplot(aes(x, y, fill = mu)) +
     geom_raster() +
@@ -225,6 +244,26 @@ results$provPredDF5q0Resample <- arealDataCI(
     popDF = mutate(select(syearWDF, -tidx), w=Population),
     draws=1000)
 
+(results$provmap <- st_as_sf(aggShapes$provShape) %>%
+    mutate(polyid=as.numeric(Prov)-1) %>%
+    right_join(results$provPredDF5q0) %>%
+    mutate(Year = tidx + 2000) %>%
+    ggplot() +
+    geom_sf(aes(fill=mu)) +
+    theme_void() +
+    scale_fill_distiller(palette = "Spectral") +
+    facet_wrap(~Year) +
+    labs(fill="5q0"))
+
+results$provMapResample <- st_as_sf(aggShapes$provShape) %>%
+    mutate(polyid=as.numeric(Prov)-1) %>%
+    right_join(results$provPredDF5q0Resample) %>%
+    ggplot() +
+    geom_sf(aes(fill=mu)) +
+    theme_void() +
+    scale_fill_distiller(palette = "Spectral") +
+    facet_wrap(~tidx)
+
 results$provNatDF5q0 <- arealDataCI(
     modelRes$modelList$temporal$mixture, 
     field,
@@ -241,23 +280,13 @@ results$provNatDF5q0Resample <- arealDataCI(
     popDF = mutate(select(syearWDF, -tidx), w=Population),
     draws=1000)
 
-results$provmap <- st_as_sf(aggShapes$provShape) %>%
-    mutate(polyid=as.numeric(Prov)-1) %>%
-    right_join(results$provPredDF5q0) %>%
-    ggplot() +
-    geom_sf(aes(fill=mu)) +
-    theme_void() +
-    scale_fill_distiller(palette = "Spectral") +
-    facet_wrap(~tidx)
-
-results$provMapResample <- st_as_sf(aggShapes$provShape) %>%
-    mutate(polyid=as.numeric(Prov)-1) %>%
-    right_join(results$provPredDF5q0Resample) %>%
-    ggplot() +
-    geom_sf(aes(fill=mu)) +
-    theme_void() +
-    scale_fill_distiller(palette = "Spectral") +
-    facet_wrap(~tidx)
+results$provNatDF5q0Point <- arealDataCI(
+    modelRes$modelList$temporal$point, 
+    field,
+    agg5q0 = TRUE,
+    polygonList = list(sf::st_as_sf(field$bound)),
+    popDF = mutate(select(syearWDF, -tidx), w=Population),
+    draws=1000)
 
 ihmeDF <- read_csv("demo/5q0Results_estimates.csv") %>%
     filter(age_group_id == 1 & year >= 2000 & year <= 2014) %>%
@@ -309,6 +338,7 @@ micsDF <- paste0(
 (results$compare5q0 <- bind_rows(
     mutate(results$provNatDF5q0, method="Mixture"),
     mutate(results$provNatDF5q0Resample, method="Resample"),
+#    mutate(results$provNatDF5q0Point, method="Point"),
     ihmeDF, u5mHTDF, micsDF) %>%
     mutate(Year=tidx+2000) %>%
     ggplot(aes(x=Year, y=mu, ymin=lwr, ymax=upr, group=method)) +
@@ -319,3 +349,69 @@ micsDF <- paste0(
     ggtitle("Change In Dominican Republic 5q0"))
 
 saveRDS(results, "~/Documents/PointPolygon/demo/resultsData.RDS")
+
+# Extra Stuff
+extractAge <- function(model){
+    ages <- c("0-28 Days", "1-6 Months", "6-12 Months", paste0(1:4, " Years"))
+    ages <- factor(ages, levels = ages)
+    idx <- c(1, which(names(model$sd$par.fixed) == "beta_age"))
+    pars_ <- model$sd$par.fixed
+    pars_ <- c(pars_[1], pars_[1] + pars_[2:length(pars_)])
+    sds_ <- sqrt(diag(model$sd$cov.fixed))
+    for(i in 2:length(sds_)){
+        sds_[i] <- sqrt(sds_[i]^2 + sds_[1]^2 + 2*model$sd$cov.fixed[1,i])
+    }
+    tibble(beta=pars_[idx], std.err=sds_[idx], age=ages)
+}
+
+extractWalks <- function(model){
+    ages <- c("0-28 Days", "1-6 Months", "6-12 Months", paste0(1:4, " Years"))
+    ages <- factor(ages, levels = ages)
+    idx <- which(row.names(model$sd$jointPrecision) == "phi")
+    subMat <- model$sd$jointPrecision[idx, idx]
+    sds <- sqrt(diag(solve(subMat)))
+    mu <- model$sd$par.random[names(model$sd$par.random) == "phi"]
+    tibble(mu=mu, std.err=sds, age=rep(ages, 15), Year=rep(2000:2014, each=7))
+}
+
+bind_rows(
+    extractAge(modelRes$modelList$temporal$mixture) %>%
+        mutate(Model="Mixture"),
+    extractAge(modelRes$modelList$temporal$resample) %>%
+        mutate(Model="Resample")) %>%
+    mutate(lwr=beta - 1.96*std.err) %>%
+    mutate(upr=beta + 1.96*std.err) %>%
+    ggplot(aes(x=Model, y=beta, ymin=lwr, ymax=upr, color=Model)) +
+    geom_point() +
+    geom_errorbar() +
+    facet_wrap(~age, ncol = 1) +
+    theme_classic() +
+    coord_flip()
+
+bind_rows(
+    extractWalks(modelRes$modelList$temporal$mixture) %>%
+        mutate(Model="Mixture"),
+    extractWalks(modelRes$modelList$temporal$resample) %>%
+        mutate(Model="Resample")) %>%
+    mutate(lwr=mu - 1.96*std.err) %>%
+    mutate(upr=mu + 1.96*std.err) %>%
+    ggplot(aes(x=Year, y=mu, ymin=lwr, ymax=upr, group=Model)) +
+    geom_line(aes(color=Model)) +
+    geom_ribbon(aes(fill=Model), alpha=.3) +
+    facet_wrap(~age) +
+    theme_classic()
+
+bind_rows(
+    extractWalks(modelRes$modelList$temporal$mixture) %>%
+        mutate(Model="Mixture"),
+    extractWalks(modelRes$modelList$temporal$resample) %>%
+        mutate(Model="Resample")) %>%
+    mutate(lwr=mu - 1.96*std.err) %>%
+    mutate(upr=mu + 1.96*std.err) %>%
+    filter(age != "4 Years") %>%
+    ggplot(aes(x=Year, y=mu, ymin=lwr, ymax=upr, group=Model)) +
+    geom_line(aes(color=Model)) +
+    geom_ribbon(aes(fill=Model), alpha=.3) +
+    facet_wrap(~age) +
+    theme_classic()
+

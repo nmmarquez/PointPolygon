@@ -1,8 +1,5 @@
-# qsub -e ~/errors/ -o ~/outputs/ -l mem_free=999G -l m_mem_free=999G \
-# -P proj_geo_nodes_u5m -l fthread=10 -q geospatial.q -N datarun \
-# -l h_rt='07:00:00:00' \
-# /share/singularity-images/lbd/shells/singR.sh -m 10 -o 5 \
-# -e s ~/Documents/PointPolygon/demo/dataRun.R
+# TODO: What about holding out data based on year of birth and holding them 
+# out until the cohort through
 .libPaths(c("~/R3.6/", .libPaths()))
 rm(list=ls())
 library(dplyr)

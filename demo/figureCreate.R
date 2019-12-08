@@ -293,12 +293,12 @@ regDivideShape <- st_as_sf(rgeos::gUnaryUnion(spDF, id=spDF@data$strat))
             unique()))
 
 sampDRResults <- 
-    "demo/Results/range=0.7,cov=-0.5,covtype=spatial,seed=1.Rds"
+    "~/Data/spaceTimeTest3/range=0.3,cov=-2,covtype=spatial,seed=1.Rds"
 rezDR <- readRDS(sampDRResults)
 
 (samplePlots$drResults <- ggFieldEst(rezDR$sim, rezDR$pred) +
     labs(fill="Probability"))
-(samplePlots$drResultsPaper <- ggFieldEst(rezDR$sim, rezDR$pred[-2]) +
+(samplePlots$drResultsPaper <- ggFieldEst(rezDR$sim, rezDR$pred) +
         labs(fill="Probability"))
 (samplePlots$drSD <- ggFieldEst(rezDR$sim, rezDR$pred, sd=T) +
     labs(fill="Std. Error"))
