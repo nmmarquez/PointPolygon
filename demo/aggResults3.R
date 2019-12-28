@@ -8,6 +8,7 @@
 
 .libPaths(c("~/R3.6/", .libPaths()))
 rm(list=ls())
+library(boot)
 library(dplyr)
 library(tidyr)
 library(readr)
@@ -23,6 +24,7 @@ library(SUMMER)
 library(Biograph)
 library(haven)
 library(plotly)
+library(forcats)
 load("./demo/prepData.rda")
 
 maxYear <- 2014
@@ -248,12 +250,13 @@ results$provPredDF5q0Resample <- arealDataCI(
     mutate(polyid=as.numeric(Prov)-1) %>%
     right_join(results$provPredDF5q0) %>%
     mutate(Year = tidx + 2000) %>%
+    mutate(mu = mu * 1000) %>%
     ggplot() +
     geom_sf(aes(fill=mu)) +
     theme_void() +
     scale_fill_distiller(palette = "Spectral") +
     facet_wrap(~Year) +
-    labs(fill="5q0"))
+    labs(fill="U5MR Per\n1000 Births"))
 
 results$provMapResample <- st_as_sf(aggShapes$provShape) %>%
     mutate(polyid=as.numeric(Prov)-1) %>%
@@ -335,18 +338,167 @@ micsDF <- paste0(
     rename(mu=u5m, lwr=lower, upr=upper) %>%
     select(mu, upr, lwr, Year, method, tidx)
 
+priors <- simhyper(
+    R = 2, nsamp = 1e+05, nsamp.check = 5000, Amat = mat, only.iid = TRUE)
+
+micsSmoothDF <- paste0(
+    "~/Documents/PointPolygon/demo/Dominican Republic_MICS5_Datasets/",
+    "Dominican Republic MICS 2014 SPSS Datasets/bh.sav") %>%
+    read_sav() %>%
+    filter(BH5 != 9) %>%
+    rename(PSU = HH1, urban = HH6, region = HH7) %>%
+    filter(BH4Y != 9999 & BH4Y != 9997) %>%
+    filter(BH4M != 99 & BH4M != 97) %>%
+    mutate(dob=sprintf("%i-%02d-01", BH4Y, BH4M)) %>%
+    mutate(dob = Date_as_cmc(dob, "%Y-%m-%d")$cmc) %>%
+    mutate(alive = ifelse(BH5 == 1, "yes", "no")) %>%
+    mutate(`DeathMonth` = floor(c(1/30.5, 1, 12)[BH9U] * BH9N)) %>%
+    filter(BH5 == 1 | !is.na(DeathMonth)) %>%
+    as.data.frame() %>%
+    {getBirths(
+        variables = c("PSU", "wmweight"),
+        data = ., surveyyear = 2014, date.interview = "WDOI",
+        dob = "dob", alive = "alive", age = "DeathMonth",
+        strata = c("urban", "region"),
+        year.cut = 2000:2014
+    )} %>%
+    countrySummary(
+        years = unique(.$time), clusterVar = "~strata+PSU", 
+        weightsVar = "wmweight", national.only=TRUE) %>%
+    filter(years != "100-100") %>%
+    arrange(years) %>%
+    fitINLA(
+        geo = NULL, Amat = NULL, 
+        year_names = .$years, year_range = c(2001, 2013),
+        priors = priors, rw = 2,
+        is.yearly=TRUE, m = 1, type.st = 0) %>%
+    .[["fit"]] %>%
+    summary() %>%
+    .[["linear.predictor"]] %>%
+    as_tibble() %>%
+    head(n=13) %>%
+    mutate(mu = inv.logit(mean)) %>%
+    mutate(lwr = inv.logit(`0.025quant`), upr = inv.logit(`0.975quant`)) %>%
+    select(mu, lwr, upr) %>%
+    mutate(method = "MICS 2014 Smoothed", Year = 2001:2013)
+
+u5mSmoothHTDF <- "~/Documents/PointPolygon/demo/DRBR61DT/DRBR61FL.DTA" %>%
+    getBirths(surveyyear = 2013, year.cut = 2000:2014) %>%
+    countrySummary(
+        years = unique(.$time), regionVar = "strata", timeVar = "time",
+        clusterVar = "~v001+v002", national.only = TRUE) %>%
+    filter(region == "All" & years != "100-100") %>%
+    arrange(years) %>%
+    fitINLA(
+        geo = NULL, Amat = NULL, 
+        year_names = .$years, year_range = c(2001, 2012),
+        priors = priors, rw = 2,
+        is.yearly=TRUE, m = 1, type.st = 0) %>%
+    .[["fit"]] %>%
+    summary() %>%
+    .[["linear.predictor"]] %>%
+    as_tibble() %>%
+    head(n=12) %>%
+    mutate(mu = inv.logit(mean)) %>%
+    mutate(lwr = inv.logit(`0.025quant`), upr = inv.logit(`0.975quant`)) %>%
+    select(mu, lwr, upr) %>%
+    mutate(method = "DHS 2013 Smoothed", Year = 2001:2012)
+
 (results$compare5q0 <- bind_rows(
     mutate(results$provNatDF5q0, method="Mixture"),
     mutate(results$provNatDF5q0Resample, method="Resample"),
-#    mutate(results$provNatDF5q0Point, method="Point"),
-    ihmeDF, u5mHTDF, micsDF) %>%
+    u5mHTDF, micsDF) %>%
     mutate(Year=tidx+2000) %>%
+    mutate(mu = mu * 1000, lwr = lwr * 1000, upr = upr * 1000) %>%
     ggplot(aes(x=Year, y=mu, ymin=lwr, ymax=upr, group=method)) +
     geom_line(aes(color=method)) +
     geom_ribbon(aes(fill=method), alpha=.3) +
     theme_classic() +
-    labs(y="5q0", fill="Method", color="Method") +
-    ggtitle("Change In Dominican Republic 5q0"))
+    labs(y="U5MR Per 1000 Births", fill="Method", color="Method") +
+    ggtitle("Change In Dominican Republic U5MR: Direct Estimate Compare") +
+        theme(
+            legend.text = element_text(size=13),
+            legend.title = element_text(size=15),
+            axis.text = element_text(size=13),
+            axis.title = element_text(size=17),
+            title =  element_text(size=20)
+        ))
+
+results$compareIHME5q0 <- bind_rows(
+    mutate(results$provNatDF5q0, method="Mixture"),
+    mutate(results$provNatDF5q0Resample, method="Resample"),
+    ihmeDF) %>%
+    mutate(Year=tidx+2000) %>%
+    mutate(mu = mu * 1000, lwr = lwr * 1000, upr = upr * 1000) %>%
+    ggplot(aes(x=Year, y=mu, ymin=lwr, ymax=upr, group=method)) +
+    geom_line(aes(color=method)) +
+    geom_ribbon(aes(fill=method), alpha=.3) +
+    theme_classic() +
+    labs(y="U5MR Per 1000 Births", fill="Method", color="Method") +
+    ggtitle("Change In Dominican Republic U5MR") +
+    theme(
+        legend.text = element_text(size=13),
+        legend.title = element_text(size=15),
+        axis.text = element_text(size=13),
+        axis.title = element_text(size=17),
+        title =  element_text(size=20))
+
+results$compareSmooth5q0 <- bind_rows(
+    mutate(results$provNatDF5q0, method="Mixture"),
+    mutate(results$provNatDF5q0Resample, method="Resample"),
+    u5mSmoothHTDF %>% mutate(tidx=Year-2000), 
+    micsSmoothDF %>% mutate(tidx=Year-2000)) %>%
+    mutate(Year=tidx+2000) %>%
+    mutate(mu = mu * 1000, lwr = lwr * 1000, upr = upr * 1000) %>%
+    ggplot(aes(x=Year, y=mu, ymin=lwr, ymax=upr, group=method)) +
+    geom_line(aes(color=method)) +
+    geom_ribbon(aes(fill=method), alpha=.3) +
+    theme_classic() +
+    labs(y="U5MR Per 1000 Births", fill="Method", color="Method") +
+    ggtitle("Change In Dominican Republic U5MR: Smooth Direct Compare") +
+    theme(
+        legend.text = element_text(size=13),
+        legend.title = element_text(size=15),
+        axis.text = element_text(size=13),
+        axis.title = element_text(size=17),
+        title =  element_text(size=20))
+
+ggsave(
+    "demo/figures/rmseIHMECompare.png", results$compareIHME5q0,
+    width=400, height=280, units = "mm")
+
+ggsave(
+    "demo/figures/rmseSmoothCompare.png", results$compareSmooth5q0,
+    width=400, height=280, units = "mm")
+
+ggsave(
+    "demo/figures/rmseDirectCompare.png", results$compare5q0,
+    width=400, height=280, units = "mm")
+
+bind_rows(
+    mutate(results$provNatDF5q0, method="Mixture"),
+    mutate(results$provNatDF5q0Resample, method="Resample"),
+    ihmeDF, u5mHTDF, micsDF) %>%
+    mutate(Year=tidx+2000) %>%
+    mutate(mu = mu * 1000, lwr = lwr * 1000, upr = upr * 1000) %>%
+    filter(
+        method == "IHME GBD Estimates" | 
+            method == "Resample" |
+            method == "Mixture") %>% 
+    ggplot(aes(x=Year, y=mu, ymin=lwr, ymax=upr, group=method)) +
+    geom_line(aes(color=method)) +
+    geom_ribbon(aes(fill=method), alpha=.3) +
+    theme_classic() +
+    labs(y="U5MR Per 1000 Births", fill="Method", color="Method") +
+    ggtitle("Change In Dominican Republic U5MR") +
+    theme(
+        legend.text = element_text(size=13),
+        legend.title = element_text(size=15),
+        axis.text = element_text(size=13),
+        axis.title = element_text(size=17),
+        title =  element_text(size=20)) +
+    scale_fill_manual(values=c("#000000", "#b7a57a", "#4b2e83")) +
+    scale_color_manual(values=c("#000000", "#b7a57a", "#4b2e83"))
 
 saveRDS(results, "~/Documents/PointPolygon/demo/resultsData.RDS")
 

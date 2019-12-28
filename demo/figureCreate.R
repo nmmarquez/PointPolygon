@@ -12,6 +12,8 @@ library(stringr)
 library(sf)
 library(Rcpp)
 library(rgdal)
+library(ggrepel)
+library(forcats)
 
 # range of the underlying spatial process as defined 
 rangeE <- .5 # range of spatial prces varies from {.3, .5, .7}
@@ -150,8 +152,8 @@ samplePlots <- list()
     theme_void() +
     labs(fill="Geolocated"))
 
-sampUnitResults <- 
-    "demo/Results/range=0.3,cov=-0.5,covtype=random,M=300,seed=6.Rds"
+sampUnitResults <-
+    "~/Data/utaziTest3/range=0.3,cov=-0.5,covtype=random,M=300,seed=6.Rds"
 
 rezUnit <- readRDS(sampUnitResults)
 rezUnit$sim$spdf <- rezUnit$sim$spdf %>%
@@ -308,15 +310,34 @@ rezDR <- readRDS(sampDRResults)
 (samplePlots$drProvError <- 
     do.call(sf:::rbind.sf, lapply(names(rezDR$pred), function(n){
         rezDR$provPred[[n]] %>%
-            mutate(Model=n)})) %>%
+            mutate(model=n)})) %>%
+        mutate(model=gsub("IHME Resample", "Resample", model)) %>%
+        mutate(model=gsub("Known", "Unmasked", model)) %>%
+        mutate(model=gsub("Mixture Model", "Mixture", model)) %>%
+        mutate(model=gsub("Utazi", "Ecological", model)) %>%
+        mutate(model = fct_relevel(
+            model,
+            "Ignore", "Resample", "Ecological", "Mixture", "Unmasked")) %>%
+        mutate(Model = model) %>%
         mutate(absDiff=abs(mu-trueValue)) %>%
         ggplot() +
         geom_sf(aes(fill = absDiff)) +
-        theme_void() +
+        theme_bw() +
+        theme(
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank()) +
         coord_sf(datum=NA) +
         facet_grid(Model~tidx) +
         scale_fill_distiller(palette = "Spectral") +
-        labs(fill="Absolute\nError"))
+        labs(fill="Absolute\nError") +
+        theme(
+            strip.text = element_text(size=15))
+        )
+
+ggsave(
+    "demo/figures/provErrorMapSim2.png", samplePlots$drProvError,
+    width=400, height=280, units = "mm"
+)
 
 (samplePlots$drProvErrorPaper <- 
         do.call(sf:::rbind.sf, lapply(names(rezDR$pred), function(n){
@@ -338,20 +359,58 @@ samplePlots$demoPlotList <- list(
     example3 = plotList3
 )
 
-samplePlots$samplesMap <-field2$bound %>%
-    st_as_sf %>%
+# plot 4 of
+
+polyDF %>%
+    mutate(reg = str_sub(strat, 1, 2)) %>%
+    select(reg, psu) %>%
+    unique() %>%
+    group_by(reg) %>%
+    summarize(N=n()) %>%
+    pull(N)
+
+st_coordinates(st_centroid(regShape)) %>%
+    {mutate(regShape, long = .[,1], lat = .[,2])} %>%
+    mutate(N = polyDF %>%
+               mutate(reg = str_sub(strat, 1, 2)) %>%
+               select(reg, psu) %>%
+               unique() %>%
+               group_by(reg) %>%
+               summarize(N=n()) %>%
+               pull(N)) %>%
     ggplot() +
     geom_sf(alpha=0) +
     geom_point(
         aes(long, lat, color=Source),
-        size=.2,
-        alpha=.4,
+        size=.6,
+        alpha=.8,
         data=pointDF %>%
             select(lat, long, Source=source) %>%
             unique()) +
     theme_void() +
     coord_sf(datum=NA) +
-    theme(legend.position = c(0.6, 0.2))
+    theme(legend.position = c(0.6, 0.2), legend.text=element_text(size=15)) +
+    labs(color="") +
+    guides(colour = guide_legend(override.aes = list(size=2))) +
+    geom_label_repel(
+        aes(x = long, y = lat, label = N), fontface = "bold", force = .1,
+        nudge_x = c(0.2, -.15, .2, -.6, -.3, -1, -1, .4, .2, .1), 
+        nudge_y = c(0.4, -.15, .2, 0, -.4, 0, 0, .2, -.5, -.3))
+
+(samplePlots$samplesMap <-  ggplot(regShape) +
+    geom_sf(alpha=0) +
+    geom_point(
+        aes(long, lat, color=Source),
+        size=.6,
+        alpha=.8,
+        data=pointDF %>%
+            select(lat, long, Source=source) %>%
+            unique()) +
+    theme_void() +
+    coord_sf(datum=NA) +
+    theme(legend.position = c(0.6, 0.2), legend.text=element_text(size=15)) +
+    labs(color="") +
+    guides(colour = guide_legend(override.aes = list(size=2))))
 
 saveRDS(samplePlots, file="./demo/plotsForPresent.Rds")
 

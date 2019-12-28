@@ -9,6 +9,7 @@ library(stringr)
 library(tidyr)
 library(ggplot2)
 library(sf)
+library(forcats)
 
 rdsPathList <- list.files("~/Data/spaceTimeTest3/", full.names=TRUE)
 
@@ -65,12 +66,19 @@ resultsDF <- bind_rows(mclapply(rdsPathList, function(f_){
         tibble()
     })
     dz}, mc.cores=8)) %>%
-    mutate(model=gsub("Reimann", "Riemann", model))
+    mutate(model=gsub("Reimann", "Riemann", model)) %>%
+    mutate(model=gsub("IHME Resample", "Resample", model)) %>%
+    mutate(model=gsub("Known", "Unmasked", model)) %>%
+    mutate(model=gsub("Mixture Model", "Mixture", model)) %>%
+    mutate(model=gsub("Utazi", "Ecological", model)) %>%
+    mutate(model = fct_relevel(
+        model,
+        "Ignore", "Resample", "Ecological", "Riemann", "Mixture", "Unmasked"))
 
 aggPlotsDR <- list()
 
 (aggPlotsDR$coverage <- resultsDF %>%
-    mutate(Model=model) %>%
+    mutate(Model=fct_rev(model)) %>%
     filter(converge == 0) %>%
     group_by(covType, rangeE, Model) %>%
     summarize(
@@ -91,7 +99,7 @@ aggPlotsDR <- list()
     guides(color=FALSE))
 
 (aggPlotsDR$coveragePaper <- resultsDF %>%
-        mutate(Model=model) %>%
+        mutate(Model=fct_rev(model)) %>%
         filter(converge == 0 & model != "Riemann") %>%
         group_by(covType, rangeE, Model) %>%
         summarize(
@@ -102,14 +110,22 @@ aggPlotsDR <- list()
         ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model)) +
         geom_point() +
         geom_errorbar() +
-        theme_classic() +
+        theme_bw() +
         facet_grid(rangeE~covType) +
         coord_flip() +
         geom_hline(yintercept=.95, linetype=2) +
         labs(x="Model", y="") +
         ggtitle("95% Coverage of Underlying Probability Field") +
         theme(panel.spacing.y = unit(0, "lines")) +
-        guides(color=FALSE))
+        guides(color=FALSE) +
+        theme(
+            strip.text = element_text(size=15),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            title = element_text(size=25),
+            axis.text.x = element_text(size=12),
+            axis.text.y = element_text(size=15),
+            axis.title.x = element_text(size=20)))
 
 (aggPlotsDR$provcoverage <- resultsDF %>%
         mutate(Model=model) %>%
@@ -144,14 +160,22 @@ aggPlotsDR <- list()
         ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model)) +
         geom_point() +
         geom_errorbar() +
-        theme_classic() +
+        theme_bw() +
         facet_grid(rangeE~covType) +
         coord_flip() +
         geom_hline(yintercept=.95, linetype=2) +
         labs(x="Model", y="") +
         ggtitle("95% Coverage of Province Probability(N=32)") +
         theme(panel.spacing.y = unit(0, "lines")) +
-        guides(color=FALSE))
+        guides(color=FALSE) +
+        theme(
+            strip.text = element_text(size=15),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            title = element_text(size=25),
+            axis.text.x = element_text(size=12),
+            axis.text.y = element_text(size=15),
+            axis.title.x = element_text(size=20)))
 
 
 (aggPlotsDR$rmseRelative <- resultsDF %>%
@@ -183,11 +207,11 @@ aggPlotsDR <- list()
     geom_text(aes(y=upr), nudge_y = .04))
 
 (aggPlotsDR$rmseRelativePaper <- resultsDF %>%
-        filter(model=="Utazi") %>%
+        filter(model=="Ecological") %>%
         select(covType:rmse) %>%
         rename(rmseUtazi=rmse) %>%
         right_join(select(resultsDF, covType:rmse, model, converge)) %>%
-        filter(converge == 0 & model != "Riemann") %>%
+        filter(converge == 0 & model != "Riemann" & model != "Ignore") %>%
         mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
         group_by(covType, model, rangeE) %>%
         summarize(
@@ -195,12 +219,12 @@ aggPlotsDR <- list()
             lwr = mean(improveRatio) - 1.96*(sd(improveRatio)/sqrt(n())),
             upr = mean(improveRatio) + 1.96*(sd(improveRatio)/sqrt(n()))) %>%
         ungroup %>%
-        rename(Model=model) %>%
+        mutate(Model=fct_rev(model)) %>%
         mutate(txt=round(mu, 2)) %>%
         ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
         geom_point() +
         geom_errorbar() +
-        theme_classic() +
+        theme_bw() +
         facet_grid(rangeE~covType) +
         coord_flip() +
         geom_hline(yintercept=0, linetype=2) +
@@ -208,10 +232,18 @@ aggPlotsDR <- list()
         ggtitle("RMSE: Margin of Improvement Over Utazi Model") +
         theme(panel.spacing.y = unit(0, "lines")) +
         guides(color=FALSE) +
-        geom_text(aes(y=upr), nudge_y = .04))
+        geom_text(aes(y=upr), nudge_y = .04) +
+        theme(
+            strip.text = element_text(size=15),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            title = element_text(size=25),
+            axis.text.x = element_text(size=12),
+            axis.text.y = element_text(size=15),
+            axis.title.x = element_text(size=20)))
 
 (aggPlotsDR$rmseProvRelative <- resultsDF %>%
-        filter(model=="Utazi") %>%
+        filter(model=="Ecological") %>%
         select(covType:seed, provrmse) %>%
         rename(rmseUtazi=provrmse) %>%
         right_join(select(resultsDF, covType:seed, provrmse, model, converge)) %>%
@@ -228,22 +260,30 @@ aggPlotsDR <- list()
         ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
         geom_point() +
         geom_errorbar() +
-        theme_classic() +
+        theme_bw() +
         facet_grid(rangeE~covType) +
         coord_flip() +
         geom_hline(yintercept=0, linetype=2) +
         labs(x="Model", y="Relative Improvement") +
-        ggtitle("Province RMSE: Margin of Improvement Over Utazi Model") +
+        ggtitle("Province RMSE: Margin of Improvement Over Ecological Model") +
         theme(panel.spacing.y = unit(0, "lines")) +
         guides(color=FALSE) +
-        geom_text(aes(y=upr), nudge_y = .06))
+        geom_text(aes(y=upr), nudge_y = .06) +
+        theme(
+            strip.text = element_text(size=15),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            title = element_text(size=25),
+            axis.text.x = element_text(size=12),
+            axis.text.y = element_text(size=15),
+            axis.title.x = element_text(size=20)))
 
 (aggPlotsDR$rmseProvRelativePaper <- resultsDF %>%
-        filter(model=="IHME Resample") %>%
+        filter(model=="Ecological") %>%
         select(covType:seed, provrmse) %>%
         rename(rmseUtazi=provrmse) %>%
         right_join(select(resultsDF, covType:seed, provrmse, model, converge)) %>%
-        filter(converge == 0 & model != "Riemann") %>%
+        filter(converge == 0 & model != "Riemann" & model != "Ignore") %>%
         mutate(improveRatio=(rmseUtazi-provrmse)/rmseUtazi) %>%
         group_by(covType, model, rangeE) %>%
         summarize(
@@ -251,23 +291,31 @@ aggPlotsDR <- list()
             lwr = mean(improveRatio) - 1.96*(sd(improveRatio)/sqrt(n())),
             upr = mean(improveRatio) + 1.96*(sd(improveRatio)/sqrt(n()))) %>%
         ungroup %>%
-        rename(Model=model) %>%
+        mutate(Model=fct_rev(model)) %>%
         mutate(txt=round(mu, 2)) %>%
         ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
         geom_point() +
         geom_errorbar() +
-        theme_classic() +
+        theme_bw() +
         facet_grid(rangeE~covType) +
         coord_flip() +
         geom_hline(yintercept=0, linetype=2) +
         labs(x="Model", y="Relative Improvement") +
-        ggtitle("Province RMSE: Margin of Improvement Over Utazi Model") +
+        ggtitle("Province RMSE: Margin of Improvement Over Ecological Model") +
         theme(panel.spacing.y = unit(0, "lines")) +
         guides(color=FALSE) +
-        geom_text(aes(y=upr), nudge_y = .06))
+        geom_text(aes(y=upr), nudge_y = .06) +
+        theme(
+            strip.text = element_text(size=15),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            title = element_text(size=25),
+            axis.text.x = element_text(size=12),
+            axis.text.y = element_text(size=15),
+            axis.title.x = element_text(size=20)))
 
 (aggPlotsDR$rmseSingleProvRelativePaper <- resultsDF %>%
-        filter(model=="Utazi") %>%
+        filter(model=="Ecological") %>%
         select(covType:seed, provrmse) %>%
         rename(rmseUtazi=provrmse) %>%
         right_join(select(resultsDF, covType:seed, provrmse, model, converge)) %>%
@@ -279,7 +327,7 @@ aggPlotsDR <- list()
             lwr = mean(improveRatio) - 1.96*(sd(improveRatio)/sqrt(n())),
             upr = mean(improveRatio) + 1.96*(sd(improveRatio)/sqrt(n()))) %>%
         ungroup %>%
-        rename(Model=model) %>%
+        mutate(Model=fct_rev(model)) %>%
         mutate(txt=round(mu, 2)) %>%
         ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
         geom_point() +
@@ -291,7 +339,15 @@ aggPlotsDR <- list()
         ggtitle("Province RMSE: Margin of Improvement Over IHME Resample Model") +
         theme(panel.spacing.y = unit(0, "lines")) +
         guides(color=FALSE) +
-        geom_text(aes(y=upr), nudge_y = .06))
+        geom_text(aes(y=upr), nudge_y = .06) +
+        theme(
+            strip.text = element_text(size=15),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            title = element_text(size=25),
+            axis.text.x = element_text(size=12),
+            axis.text.y = element_text(size=15),
+            axis.title.x = element_text(size=20)))
 
 (aggPlotsDR$rmsePaper <- resultsDF %>%
         filter(converge == 0 & model != "Riemann" & rmse < .3) %>%
@@ -306,7 +362,7 @@ aggPlotsDR <- list()
         ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
         geom_point() +
         geom_errorbar() +
-        theme_classic() +
+        theme_bw() +
         facet_grid(rangeE~covType) +
         coord_flip() +
         geom_hline(yintercept=0, linetype=2) +
@@ -374,14 +430,22 @@ aggPlotsDR <- list()
         ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
         geom_point() +
         geom_errorbar() +
-        theme_classic() +
+        theme_bw() +
         facet_grid(rangeE~covType) +
         coord_flip() +
         geom_hline(yintercept=0, linetype=2) +
         labs(x="Model", y="Bias") +
         ggtitle("RMSE: Average Bias of Models") +
         theme(panel.spacing.y = unit(0, "lines")) +
-        guides(color=FALSE))
+        guides(color=FALSE) +
+        theme(
+            strip.text = element_text(size=15),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            title = element_text(size=25),
+            axis.text.x = element_text(size=12),
+            axis.text.y = element_text(size=15),
+            axis.title.x = element_text(size=20)))
 
 (aggPlotsDR$dissDiff <- resultsDF %>%
     filter(converge == 0) %>%
@@ -413,7 +477,7 @@ aggPlotsDR <- list()
             lwr = quantile(dissDiff, probs=.025),
             upr = quantile(dissDiff, probs=.975)) %>%
         ungroup %>%
-        rename(Model=model) %>%
+        mutate(Model=fct_rev(model)) %>%
         mutate(txt=round(mu, 2)) %>%
         ggplot(aes(x=Model, ymin=lwr, y=mu, ymax=upr, color=Model, label=txt)) +
         geom_point() +
@@ -425,23 +489,63 @@ aggPlotsDR <- list()
         labs(x="Model", y="Bias") +
         ggtitle("Dissimilarity Difference") +
         theme(panel.spacing.y = unit(0, "lines")) +
-        guides(color=FALSE))
+        guides(color=FALSE) +
+        theme(
+            strip.text = element_text(size=15),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            title = element_text(size=25),
+            axis.text.x = element_text(size=12),
+            axis.text.y = element_text(size=15),
+            axis.title.x = element_text(size=20)))
 
 (aggPlotsDR$runtime <- resultsDF %>%
     select(covType:seed, model, runtime) %>%
-    filter(model %in% c("Mixture Model", "Utazi", "Ignore", "IHME Resample")) %>%
+    filter(!(model %in% c("Unmaksed"))) %>%
     left_join(
         resultsDF %>%
-            filter(model %in% c("Known")) %>%
+            filter(model %in% c("Unmasked")) %>%
             select(covType:seed, runtime) %>%
             rename(IHME=runtime), 
         by=c("covType", "covVal", "rangeE", "seed")) %>%
     ggplot(aes(x=IHME, y=runtime)) +
     geom_point() +
     geom_abline() +
-    theme_classic() +
+    theme_bw() +
     facet_wrap(~model, scales="free_y") +
-    labs(x="Known Runtime", y="Runtime") + 
-    expand_limits(x = 0, y = 0))
+    labs(x="Unmasked Runtime", y="Runtime") + 
+    expand_limits(x = 0, y = 0) +
+        theme(
+            strip.text = element_text(size=15),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            title = element_text(size=25),
+            axis.text.x = element_text(size=12),
+            axis.text.y = element_text(size=15),
+            axis.title.x = element_text(size=20)))
+
+ggsave(
+    "demo/figures/dissSim2.png", aggPlotsDR$dissDiffPaper,
+    width=400, height=280, units = "mm")
+
+ggsave(
+    "demo/figures/biasSim2.png", aggPlotsDR$biasPaper,
+    width=400, height=280, units = "mm")
+
+ggsave(
+    "demo/figures/covSim2.png", aggPlotsDR$coveragePaper,
+    width=400, height=280, units = "mm")
+
+ggsave(
+    "demo/figures/provcovSim2.png", aggPlotsDR$provcoveragePaper,
+    width=400, height=280, units = "mm")
+
+ggsave(
+    "demo/figures/rmseSim2.png", aggPlotsDR$rmseRelativePaper,
+    width=400, height=280, units = "mm")
+
+ggsave(
+    "demo/figures/provrmseSim2.png", aggPlotsDR$rmseProvRelativePaper,
+    width=400, height=280, units = "mm")
 
 write_rds(aggPlotsDR, "~/Documents/PointPolygon/demo/aggplotsDR.Rds")
