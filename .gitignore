@@ -2,11 +2,29 @@
 .Rhistory
 .Rapp.history
 
+# data folders
+demo/DRBR61DT
+demo/Dominican\ Republic_MICS5_Datasets
+demo/csde.PNG
+demo/secCenso
+
 # Session Data files
 *.RData
 *.Rdata
+*.Rda
 *.Rds
 *.Rout
+*.rda
+*.csv
+*.old
+*.RDS
+*.rds
+*.zip
+*.pdf
+demo/IHMEpresentation_files
+demo/generalPresentation_files
+demo/libs
+figures/*
 
 # Example code in package build process
 *-Ex.R

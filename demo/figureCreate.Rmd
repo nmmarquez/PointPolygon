@@ -56,7 +56,7 @@ unitSim <- simField(
 
 # just some R plotting 
 plotList <- lapply(c("V1", "z", "theta"), function(eff){
-    unitSim$spdf@data %>%
+    unitSim$spdf %>%
         gather("Effect", "Value", V0:theta) %>%
         filter(Effect==eff) %>%
         ggplot(aes(x, y, fill=Value)) +
@@ -102,7 +102,7 @@ unitSim <- simField(
 
 # just some R plotting 
 plotList <- lapply(c("V1", "z", "theta"), function(eff){
-    unitSim$spdf@data %>%
+    unitSim$spdf %>%
         gather("Effect", "Value", V0:theta) %>%
         filter(Effect==eff) %>%
         ggplot(aes(x, y, fill=Value)) +
@@ -141,7 +141,7 @@ unitSim <- simField(
 
 
 plotList <- lapply(c("V1", "z", "theta"), function(eff){
-    unitSim$spdf@data %>%
+    unitSim$spdf %>%
         gather("Effect", "Value", V0:theta) %>%
         filter(Effect==eff) %>%
         ggplot(aes(x, y, fill=Value)) +
@@ -186,7 +186,7 @@ ggplot() +
     theme_void() + 
     geom_raster(
         aes(x=x, y=y, fill=is.na(obs)),
-        data=pointSampleDF %>% right_join(unitSim$spdf@data)) +
+        data=pointSampleDF %>% right_join(unitSim$spdf)) +
     scale_fill_manual(
         breaks = c(TRUE, FALSE),
         values=c("black", "white")) +
@@ -206,7 +206,7 @@ ggplot() +
     geom_raster(
         aes(x=x, y=y, fill=is.na(obs)),
         data=pointSampleDF %>%
-            right_join(unitSim$spdf@data) %>%
+            right_join(unitSim$spdf) %>%
             mutate(val=as.character(is.na(obs) + 2))) +
     scale_fill_manual(
         breaks = c("1", "2", "3"),

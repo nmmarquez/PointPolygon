@@ -31,6 +31,78 @@ for(i in 1:nrow(paramDF)){
         paramDF$seed[i],
 
         sep=" ")
+
+    system(qsub)
+}
+
+
+paramDF2 <- dplyr::filter(unique(dplyr::select(paramDF, -M)), seed %in% 1:10)
+
+for(i in 1:nrow(paramDF2)){
+    modelname <- paste0(
+        "range=", paramDF2$rangeE[i],
+        ",cov=", paramDF2$covVal[i],
+        ",covtype=", paramDF2$covType[i],
+        ",seed=", paramDF2$seed[i])
+    
+    qsub <- paste(
+        "qsub", 
+        "-e ~/errors/",
+        "-o ~/outputs/",
+        "-l mem_free=100G -l m_mem_free=100G -P proj_geo_nodes_u5m",
+        "-l fthread=20 -l h_rt=05:00:00:00 -q geospatial.q",
+        "-N", modelname,
+        "/share/singularity-images/lbd/shells/singR.sh -m 2 -o 4 -e s",
+        "~/Documents/PointPolygon/demo/drTest.R", 
+        paramDF2$rangeE[i],
+        paramDF2$covVal[i],
+        paramDF2$covType[i],
+        paramDF2$seed[i],
+        
+        sep=" ")
+
+        system(qsub)
+}
+
+for(i in 0:14){
+    modelname <- paste0("full_data_y", i)
+    
+    qsub <- paste(
+        "qsub", 
+        "-e ~/errors/",
+        "-o ~/outputs/",
+        "-l mem_free=200G -l m_mem_free=200G -P proj_geo_nodes_u5m",
+        "-l fthread=10 -l h_rt=05:00:00:00 -q geospatial.q",
+        "-N", modelname,
+        "/share/singularity-images/lbd/shells/singR.sh -m 10 -o 5 -e s",
+        "~/Documents/PointPolygon/demo/dataRun.R", i, "NA", sep=" ")
     
     system(qsub)
 }
+
+for(i in 0:9){
+    modelname <- paste0("full_data_reg", i)
+    
+    qsub <- paste(
+        "qsub", 
+        "-e ~/errors/",
+        "-o ~/outputs/",
+        "-l mem_free=200G -l m_mem_free=200G -P proj_geo_nodes_u5m",
+        "-l fthread=20 -l h_rt=05:00:00:00 -q geospatial.q",
+        "-N", modelname,
+        "/share/singularity-images/lbd/shells/singR.sh -m 10 -o 5 -e s",
+        "~/Documents/PointPolygon/demo/dataRun.R", "NA", i, sep=" ")
+    
+    system(qsub)
+}
+
+system(paste(
+    "qsub", 
+    "-e ~/errors/",
+    "-o ~/outputs/",
+    "-l mem_free=200G -l m_mem_free=200G -P proj_geo_nodes_u5m",
+    "-l fthread=20 -l h_rt=05:00:00:00 -q geospatial.q",
+    "-N", "full_data",
+    "/share/singularity-images/lbd/shells/singR.sh -m 10 -o 5 -e s",
+    "~/Documents/PointPolygon/demo/dataRun.R", "NA", "NA", sep=" "
+))

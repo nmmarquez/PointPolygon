@@ -6,7 +6,7 @@
 \usage{
 runFieldModelUtazi(field, pointDF = NULL, polyDF = NULL, moption = 0,
   verbose = FALSE, symbolic = TRUE, control = list(eval.max = 10000,
-  iter.max = 10000), rWidth = NULL)
+  iter.max = 10000), rWidth = NULL, aggData = TRUE, shape3 = NULL)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -16,7 +16,6 @@ runFieldModelUtazi(field, pointDF = NULL, polyDF = NULL, moption = 0,
 \item{polyDF}{data simulated from samplePolygns}
 
 \item{moption}{int, intger indicating how polygon data should be estimated 0
-is by Reimann sum approximation, 1 is by redistribution, and 2 is by Utazi
 approach.}
 
 \item{verbose}{logical, print model fitting information}
@@ -26,6 +25,10 @@ approach.}
 \item{control}{list, control list passed to nlminb}
 
 \item{rWidth}{int, only used in moption 2 to build besag prior}
+
+\item{aggData}{bool, whether to aggregate data as passed in}
+
+\item{shape3}{the shape to build the adjaceny matrix with}
 }
 \value{
 List of fitted model objects.

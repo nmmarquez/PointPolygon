@@ -18,6 +18,9 @@
 #' parameters.
 #' @param mcmc logical, default FALSE Should model be fit with MCMC. Not
 #' compatible with moption 2.
+#' @param AprojPoly sparseMatrix, sparse matrix with population weight information for polygons.
+#' @param shape3 shape to build the adjaceny matrix for when moption == 2
+#' @param start starting points of parameters.
 #' @param ... Further arguments to pass to tmbstan
 #' 
 #' @return List of fitted model objects.
@@ -57,6 +60,9 @@ runFieldModel <- function(
     rWidth = NULL,
     priors = FALSE,
     mcmc = FALSE,
+    AprojPoly = NULL,
+    shape3 = NULL,
+    start = list(),
     ...){
     model <- "PointPolygon"
     if(moption == 1 & !is.null(polyDF)){
@@ -72,22 +78,16 @@ runFieldModel <- function(
         moption <- 0
     }
     if(moption == 2){
-        if(!is.null(polyDF)){
-            polyDF <- polyDF %>% 
-                select(-id, -trueid) %>%
-                group_by(polyid) %>% 
-                summarize_all(sum) %>%
-                as.data.frame
-        }
         fit <- runFieldModelUtazi(
-            field, 
-            pointDF,
-            polyDF,
-            moption,
-            verbose,
-            symbolic,
-            control,
-            rWidth)
+            field      = field, 
+            pointDF    = pointDF,
+            polyDF     = polyDF,
+            moption    = moption,
+            verbose    = verbose,
+            symbolic   = symbolic,
+            control    = control,
+            rWidth     = rWidth,
+            shape3     = shape3)
         
         return(fit)
     }
@@ -96,11 +96,11 @@ runFieldModel <- function(
         pointDF <- polyDF %>%
             select(-id, -polyid) %>%
             rename(id=trueid) %>%
-            select(id, trials, obs) %>%
-            rbind(select(pointDF, id, trials, obs))
+            select(id, tidx, trials, obs) %>%
+            rbind(select(pointDF, id, tidx, trials, obs))
         polyDF <- NULL
     }
-    moption_ <- ifelse(moption == 4, 1, moption)
+    moption_ <- ifelse(moption == 4, 0, moption)
     if(moption==4){
         polyDF <- NULL
     }
@@ -110,10 +110,27 @@ runFieldModel <- function(
         polyDF = polyDF,
         moption = moption_)
     inputs$Data$priors <- as.numeric(priors)
+    if(!is.null(AprojPoly)){
+        inputs$Data$AprojPoly <- AprojPoly
+    }
+    if(length(start) > 0){
+       for(n in names(start)){
+           if(n %in% names(inputs$Params)){
+               if(verbose){
+                   print(class(inputs$Params[[n]]))
+                   print(paste0("replacing start value of ", n))
+                   print(paste0("Original Length ", length(inputs$Params[[n]])))
+                   print(paste0("New Length ", length(start[[n]])))
+               }
+               inputs$Params[[n]] <- start[[n]]
+           }
+       } 
+    }
     startTime <- Sys.time()
     Obj <- TMB::MakeADFun(
         data = inputs$Data,
         parameters = inputs$Params,
+        map=inputs$Map,
         DLL = model,
         random = "z",
         silent = !verbose)

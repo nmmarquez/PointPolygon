@@ -30,7 +30,7 @@
 #' @export
 
 ggFieldEst <- function(field, predList, sd=FALSE){
-    DF <- field$spdf@data
+    DF <- dplyr::select(dplyr::as_tibble(field$spdf), -geometry)
     allDF <- DF
     allDF$Type <- "True"
     allDF$sd <- NA
@@ -46,11 +46,11 @@ ggFieldEst <- function(field, predList, sd=FALSE){
     }
     
     new <- field
-    new$spdf@data <- allDF
+    new$spdf <- allDF
     if(sd){
-        new$spdf@data <- allDF[allDF$Type != "True",]
-        return(ggField(new, "sd") + ggplot2::facet_wrap(~Type))
+        new$spdf <- allDF[allDF$Type != "True",]
+        return(ggField(new, "sd") + ggplot2::facet_grid(Type~tidx))
     }
     ggField(new) +
-        ggplot2::facet_wrap(~Type)
+        ggplot2::facet_grid(Type~tidx)
 }

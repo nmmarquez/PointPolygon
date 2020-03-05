@@ -4,8 +4,8 @@
 \alias{samplePPMix}
 \title{Take Observations from Points and Polygons within the latent field}
 \usage{
-samplePPMix(field, N, M, p = 0.5, polygonList = NULL, rWidth = NULL,
-  replace = TRUE, ...)
+samplePPMix(field, N, M, times = NULL, p = 0.5, polygonList = NULL,
+  rWidth = NULL, replace = TRUE, ...)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -13,6 +13,8 @@ samplePPMix(field, N, M, p = 0.5, polygonList = NULL, rWidth = NULL,
 \item{N}{int, Number of points sampled for each polygon}
 
 \item{M}{int, Number of trials for each point}
+
+\item{times}{vector of int, times to sample from}
 
 \item{p}{numeric >0 & <=1, percentage of polygons sampled}
 
@@ -51,7 +53,7 @@ unitSim <- simField(
         list(type="cluster", value=-2)
     ))
 
-mixSample <- samplePPMix(unitSim, 30, 150, .5, rWidth=3)
+mixSample <- samplePPMix(unitSim, 30, 150, p=.5, rWidth=3)
 head(mixSample$pointDF)
 head(mixSample$polyDF)
 

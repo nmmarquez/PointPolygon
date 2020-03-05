@@ -4,7 +4,7 @@
 \alias{samplePoints}
 \title{Take Point Observations from a spatial field.}
 \usage{
-samplePoints(field, N, M, replace = TRUE, ...)
+samplePoints(field, N, M, replace = TRUE, times = NULL, ...)
 }
 \arguments{
 \item{field}{field object which simulated underlying data}
@@ -14,6 +14,8 @@ samplePoints(field, N, M, replace = TRUE, ...)
 \item{M}{int, Number of trials for each point either 1 or N long}
 
 \item{replace}{logical, replace pixel probabilities in sampling?}
+
+\item{times}{vector of int, times to sample from}
 
 \item{...}{further argumnets for compatibility}
 }

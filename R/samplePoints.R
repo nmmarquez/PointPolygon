@@ -7,6 +7,7 @@
 #' @param N int 1, Number of points to simulate
 #' @param M int, Number of trials for each point either 1 or N long 
 #' @param replace logical, replace pixel probabilities in sampling?
+#' @param times vector of int, times to sample from
 #' @param ... further argumnets for compatibility 
 #' 
 #' @return data.frame with observation number, number of trials, and the id
@@ -30,9 +31,15 @@
 #' 
 #' @export
 
-samplePoints <- function(field, N, M, replace=TRUE, ...){
-    DF <- dplyr::sample_n(field$spdf@data, N, replace=replace)
+samplePoints <- function(field, N, M, replace=TRUE, times=NULL, ...){
+    if(is.null(times)){
+        times <- unique(field$spdf$tidx)
+    }
+    DF <- field$spdf %>%
+        dplyr::as_tibble() %>%
+        dplyr::filter(sapply(tidx, function(t) t %in% times)) %>%
+        dplyr::sample_n(N, replace=replace)
     DF$trials <- M
     DF$obs <- stats::rbinom(N, size=DF$trials, prob=DF$theta)
-    DF[,c("id", "trials", "obs")]
+    DF[,c("id", "tidx", "trials", "obs")]
 }

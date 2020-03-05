@@ -1,0 +1,146 @@
+---
+# PLEASE SEE THE README for in depth description github.com/brentthorne/posterdown
+poster_height: "36in"
+poster_width: "24in"
+font_family: 'Rasa'
+#ESSENTIALS
+title: '**Harmonizing Disparate Spatial Resolution Surveys for Estimating U5M in VR Strained Countries**'
+author:
+  - name: '**Neal Marquez**'
+    affil: 1, 2
+    main: true
+    email: nmarquez@uw.edu
+  - name: Jonathan Wakefield
+    affil: 3, 4
+    main: false
+    email: 'jonno@uw.edu'
+affiliation:
+  - num: 1
+    address: Department of Sociology, University of Washington 
+  - num: 2
+    address: Institute for Health Metrics and Evaluation, Seattle, Washington
+  - num: 3
+    address: Department of Statistics, University of Washington
+  - num: 3
+    address: Department of Biostatistics, University of Washington
+#STYLE & FORMATTING
+title_textsize: "70pt"
+author_textsize: "1.17em"
+authorextra_textsize: "40px"
+affiliation_textsize: "25px"
+affiliation_textcol: '#000000'
+caption_fontsize: "20pt"
+#Middle of the poster
+middle_fontfamily: "Special Elite"
+middle_textcol: "#000000"
+middle:textalpha: 10
+middle_fontsize: "100px"
+main_findings:
+  - "Utilizing varied survey data sources."
+  - "Improving estimates for precision public health."
+logoleft_name: "Figures/wlogo.png"
+logocenter_name: "../qr_dr_harmonize.png"
+logoright_name: "../csde.PNG"
+#---POSTER BODY OPTIONS---#
+primary_colour: '#000000'
+secondary_colour: '#000000'
+accent_colour: "#b7a57a"
+body_bgcol: "#ffffff"
+body_textsize: "35px"
+body_textcol: "#000000"
+reference_textsize: "20px"
+#--Standard Options--#
+output: 
+  posterdown::posterdown_betterport:
+    self_contained: false
+    pandoc_args: --mathjax
+    highlight: espresso
+    number_sections: true
+bibliography: MyBib.bib
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  results = 'asis',
+  echo = FALSE,
+  comment = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'
+)
+```
+
+```{r}
+library(ggplot2)
+
+samplePlots <- readRDS("../plotsForPresent.Rds")
+
+resultsPlotsDR <- readRDS("../aggplotsDR.Rds")
+
+resultsPlots <- readRDS("../aggplots.Rds")
+
+finalPlots <- readRDS("../resultsData.RDS")
+```
+
+# Introduction
+
+A new focus on reducing inequalities in global health outcomes has required that geographic data be used to understand the spatial risk of detrimental health outcomes and to identify who lies at the margins for greatest risk. While some data sources provide geographic coordinates for each observation, many sources provide data that are representative of administrative units only. How to harmonize these data sources has been widely contested, but to date, no agreed solution has overcome issues when data are presented in the combined form of point alongside point masked data. Furthermore, tests comparing validity of methods are nearly non-existent. 
+
+## Objectives
+
+1. Introduce a novel method for using point masked data for spatial models. 
+2. Compare to previous models  
+3. Assess estimates to trusted sources  
+
+# Data  
+
+- World Population Ratsers Data
+- 2014 Multiple Indicator Cluster Survey DR
+- 2007/13 Demographic and Health Survey DR
+- Administrative Boundary Data DR
+
+# Methods
+
+$$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\ \vdots \\ \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\ \end{cases} \text{for } j \in \mathcal{A}_i \\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1}) \\ \kappa \sim \text{Log Normal}(0, 10) \\ \tau \sim \text{Log Normal}(0, 10) \\ \rho \sim \text{Logit Normal}(0, 10)$$
+
+## Simulation Scenarios
+
+<img src="../diagram.png" width="95%"/>
+
+<img src="../UFUqUPT.png" width="95%"/>
+
+```{r out.width='95%', fig.align='center'}
+samplePlots$fieldDR +
+        ggplot2::facet_wrap(~tidx, ncol=2)
+```
+
+<br>
+<br>
+<br>
+
+# Results
+
+```{r out.width='95%', fig.align='center'}
+resultsPlots$rmseRelativePaper
+```
+
+```{r out.width='95%', fig.align='center'}
+finalPlots$provmap +
+  ggtitle("Mixture Model U5MR Estimates") +
+    theme(
+        legend.text = element_text(size=13),
+        legend.title = element_text(size=15),
+        title =  element_text(size=20))
+```
+
+```{r out.width='95%', fig.align='center'}
+finalPlots$compareIHME5q0
+```
+
+
+# Conclusion
+
+1. New model provides significant improvement over previous models
+2. Model selection has significant impact on interpretation of results
+3. Improvment in RMSE of up to 30% in Dominican Republic simulation 
+4. Reduction of standard errors compared to ignoring data (35% at province)
+5. Model selection has important implications for mortality trends

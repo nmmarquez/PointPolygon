@@ -1,0 +1,44 @@
+---
+output:
+  pdf_document: default
+---
+# Results of Model Comparisons on DR Child Mortality Data
+
+
+Though we have compared and shown that our new presented mixture model outperforms other models in a simulated environment we also would like to demonstrate the performance of this model against real data. In order to do so we compare our mixture model, against the IHME resample model, as well as ignoring MICS data which has its cluster locations geographically masked. This model runs for each of these will include a set of aditional parameters to test. We choose as a baseline model  a spatial temporal random effect model with fixed effects on age group and survey random effects (labeled "noRE"). A model that accounts for different temporal trajectories by age group is tested by adding independent random walks by age group to the baseline model (labeled "temporal"). Lastly we test the addition of a iid random effect per cluster to the temporal model (labeled "full"). For each of these parameter configurations we can test the different methods for hadeling areal data either ignoring it, the IHME resample method, or our new mixture method giving us a total of 9 tested models. 
+
+Our evaluation strategy consists of holding out all data for a single year for years 2000-2013. For each year holdout model fit we make predictions for all locations and link the estimate to the held out data point for point located data. We then evaluate the likelihood of observing that data given the estimate and compute the overall negative log likelihood of the heldout data. For each year holdout we can pick a model that performed best on the data. Below are the results for model performance where we have how often a model performed the best out of sample.
+
+```{R, warning=FALSE, message=F, echo=F}
+library(sf)
+library(ggplot2)
+results <- readRDS("../resultsData.RDS")
+results$bestmodel
+```
+
+More often the mixture model performs the best and in particular the mixture model which has the temporal components provides the best fit. From here I compare what the actual spatial field looks like produced by the model for$~_5q_0$. I aggregate data up to the Admin 1 level (province) and plot the results. You can see that the resmaple method and the Mixture method produce pretty different results. 
+
+## Mixture Model Results$~_5q_0$
+```{R, warning=FALSE, message=F, echo=F}
+results$provmap
+```
+
+
+## Resample Results$~_5q_0$
+```{R, warning=FALSE, message=F, echo=F}
+results$provMapResample
+```
+
+The biggest differnce comes in the form of the temporal components. The resample model shows some strong changes over time while the Mixture model does not. I checked with IHMEs results and they do indeed have changes in mortality within the DR. You can see this more clearly when I aggregate the data to the national level and make a time series plots. The differences are pretty alarming. 
+
+## Resample Results$~_5q_0$
+```{R, warning=FALSE, message=F, echo=F}
+results$compare5q0
+```
+
+# Next Steps
+
+I think that in order for me to feel good about these results I want to do some more comparsions. First I want to compute a survey weighted direct estimate to$~_5q_0$ and see how it compares to these two models results. Next, i wentto test simpilar models that do not include space time interaction effects, perhaps only space or only time. Any feedback you have on what steps to take next would also be greatly appreciated.
+
+Thanks,
+Neal
