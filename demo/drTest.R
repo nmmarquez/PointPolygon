@@ -211,10 +211,10 @@ modelList <- list(
     `IHME Resample` = runFieldModel(
         field, pointDF, ihmePolyDF, moption=5, verbose=T
     ),
-    # `Riemann` = runFieldModel(
-    #     field, pointDF, select(polyDF, -strat), moption=3, verbose=T,
-    #     AprojPoly=AprojPoly
-    # ),
+    `Riemann` = runFieldModel(
+        field, pointDF, select(polyDF, -strat), moption=3, verbose=T,
+        AprojPoly=AprojPoly
+    ),
     `Ignore` = runFieldModel(
         field, pointDF, polyDF, moption=4, verbose=T, AprojPoly=AprojPoly
     ),
@@ -289,4 +289,4 @@ unitResults <- list(
     regPred = regPredList
 )
 
-saveRDS(unitResults, file=paste0("~/Data/spaceTimeTest3/", modelname))
+saveRDS(unitResults, file=paste0("~/Data/spaceTimeTest4/", modelname))

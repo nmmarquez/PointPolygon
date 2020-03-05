@@ -139,6 +139,11 @@ results$bestmodel <- oosDF %>%
     summarize(N=n()) %>%
     arrange(-N)
 
+oosDF %>%
+    group_by(pars, method) %>%
+    summarise(`Mean NLL` = mean(nll)) %>%
+    arrange(`Mean NLL`)
+
 oosRegDF <- bind_rows(lapply(0:9, function(i){
     modRes <- readRDS(sprintf("~/Data/dataRun/model_y%s_r%s_.RDS", "NA", i))
     print(i)
@@ -227,6 +232,8 @@ results$MapPoint <- results$predDF5q0Point %>%
     theme_void() +
     scale_fill_distiller(palette = "Spectral") +
     facet_wrap(~tidx)
+
+source("R/arealDataCI.R")
 
 results$provPredDF5q0 <- arealDataCI(
     modelRes$modelList$temporal$mixture, 

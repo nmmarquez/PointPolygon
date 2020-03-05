@@ -314,6 +314,7 @@ modelList <- list()
 modelList$noRE <- list()
 modelList$temporal <- list()
 modelList$full <- list()
+modelList$riemann <- list()
 
 modelList$noRE$point <- modelRun(
     pointDF, polyDF = NULL, nugget = FALSE, time_structured = FALSE,

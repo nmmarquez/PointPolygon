@@ -1,4 +1,4 @@
-.libPaths(c("~/R3.5/", .libPaths()))
+#.libPaths(c("~/R3.5/", .libPaths()))
 rm(list=ls())
 library(arm)
 library(rgeos)
@@ -14,6 +14,7 @@ library(Rcpp)
 library(rgdal)
 library(ggrepel)
 library(forcats)
+library(inlabru)
 
 # range of the underlying spatial process as defined 
 rangeE <- .5 # range of spatial prces varies from {.3, .5, .7}
@@ -250,8 +251,13 @@ syearWDF <- filter(yearWDF, tidx == max(tidx))
                 left_join(tibble(tidx=0:4, key=1), by="key"))
         )
 
-spDF <- readOGR("~/Documents/DRU5MR/data-extended/SECCenso2010.dbf") %>%
+# source
+# https://centroarcoiris.carto.com/tables/seccenso2010/public/map
+spDF <- readOGR("demo/secCenso/seccenso2010.dbf") %>%
     spTransform(CRS("+proj=longlat"))
+spDF$ZONA <- spDF$zona
+spDF$PROV <- spDF$prov
+spDF$REG <- spDF$reg
 spDF$strat <- paste0(spDF$REG, "_", spDF$ZONA)
 provShape <- st_as_sf(rgeos::gUnaryUnion(spDF, id=spDF@data$PROV))
 regShape <- st_as_sf(rgeos::gUnaryUnion(spDF, id=spDF@data$REG))
@@ -369,7 +375,7 @@ polyDF %>%
     summarize(N=n()) %>%
     pull(N)
 
-st_coordinates(st_centroid(regShape)) %>%
+(samplePlots$samplesMap <- st_coordinates(st_centroid(regShape)) %>%
     {mutate(regShape, long = .[,1], lat = .[,2])} %>%
     mutate(N = polyDF %>%
                mutate(reg = str_sub(strat, 1, 2)) %>%
@@ -395,22 +401,89 @@ st_coordinates(st_centroid(regShape)) %>%
     geom_label_repel(
         aes(x = long, y = lat, label = N), fontface = "bold", force = .1,
         nudge_x = c(0.2, -.15, .2, -.6, -.3, -1, -1, .4, .2, .1), 
-        nudge_y = c(0.4, -.15, .2, 0, -.4, 0, 0, .2, -.5, -.3))
+        nudge_y = c(0.4, -.15, .2, 0, -.4, 0, 0, .2, -.5, -.3)))
 
-(samplePlots$samplesMap <-  ggplot(regShape) +
-    geom_sf(alpha=0) +
-    geom_point(
-        aes(long, lat, color=Source),
-        size=.6,
-        alpha=.8,
-        data=pointDF %>%
-            select(lat, long, Source=source) %>%
-            unique()) +
+load("./demo/prepData.rda")
+
+maxYear <- 2014
+minYear <- 2000
+nYears <- length(minYear:maxYear)
+ageVec <- c(NN=0, PNN1=1, PNN2=2, `1yr`=3, `2yr`=4, `3yr`=5, `4yr`=6)
+
+fieldDR <- simField(
+    N = as.matrix(select(fullDF, long, lat)), rangeE = 1,
+    offset = c(0.1, 0.2),
+    max.edge = c(0.45,0.5),
+    beta0 = -4,
+    sigmaE = .3,
+    nTimes = 1,
+    rho = .9, shape=spDF)
+
+(samplePlots$meshexample <- st_as_sf(fieldDR$bound) %>%
+    ggplot() +
+    geom_sf(alpha=.0) +
     theme_void() +
-    coord_sf(datum=NA) +
-    theme(legend.position = c(0.6, 0.2), legend.text=element_text(size=15)) +
-    labs(color="") +
-    guides(colour = guide_legend(override.aes = list(size=2))))
+    gg(fieldDR$mesh))
+
+(samplePlots$projectexample <- ggField(fieldDR) +
+    labs(fill = "Probability"))
+
+(samplePlots$mixexample <- ggplot(fieldDR$spdf) +
+    geom_raster(aes(x = x, y = y, fill = theta)) +
+    theme_void() +
+    scale_fill_distiller(palette = "Spectral") +
+    labs(fill = "Probability") +
+    geom_sf(alpha = 0, data = provShape))
+
+aggShapes <- readRDS("demo/aggShapes.Rds")
+polygonList <- lapply(1:nrow(aggShapes$provShape@data), function(i){
+        sf::st_as_sf(aggShapes$provShape[i,])})
+popDF <- mutate(select(syearWDF, -tidx), w=Population)
+
+w <- fieldDR$spdf %>%
+    as_tibble %>%
+    left_join(popDF) %>%
+    pull(w)
+
+ciDF <- bind_rows(lapply(1:length(polygonList), function(i){
+    subSPDF <- polygonList[[i]]
+    subSPDF$isPresent <- TRUE
+    pointsDF <- cbind(
+        isPresent=sapply(sf::st_intersects(fieldDR$spdf,subSPDF), function(z){
+            length(z)>0}), 
+        fieldDR$spdf) %>%
+        filter(isPresent) %>%
+        dplyr::as_tibble() %>%
+        select(tidx, id)
+    
+    bind_rows(lapply(unique(pointsDF$tidx), function(t){
+        ridx <- pointsDF %>%
+            filter(tidx == t) %>%
+            mutate(present=T) %>%
+            right_join(
+                dplyr::as_tibble(fieldDR$spdf),
+                by = c("tidx", "id")) %>%
+            mutate(present=!is.na(present)) %>%
+            pull(present) %>%
+            which()
+        
+        tibble(
+            polyid = i-1,
+            tidx = t,
+            trueValue = weighted.mean(fieldDR$spdf$theta[ridx], w=w[ridx])
+        )
+    }))
+}))
+
+provexSPDF <- do.call(rbind, polygonList) %>%
+    mutate(polyid=(1:n())-1) %>%
+    right_join(ciDF, by="polyid")
+
+(samplePlots$provAggExample <- ggplot(provexSPDF, aes(fill=trueValue)) +
+    geom_sf() +
+    theme_void() +
+    scale_fill_distiller(palette = "Spectral") +
+    labs(fill = "Probability"))
 
 saveRDS(samplePlots, file="./demo/plotsForPresent.Rds")
 

@@ -5,6 +5,8 @@
 # data folders
 demo/DRBR61DT
 demo/Dominican\ Republic_MICS5_Datasets
+demo/csde.PNG
+demo/secCenso
 
 # Session Data files
 *.RData

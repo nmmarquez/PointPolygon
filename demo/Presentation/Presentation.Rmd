@@ -28,22 +28,22 @@ title_textsize: "70pt"
 author_textsize: "1.17em"
 authorextra_textsize: "40px"
 affiliation_textsize: "25px"
-affiliation_textcol: '#00000080'
+affiliation_textcol: '#000000'
 caption_fontsize: "20pt"
 #Middle of the poster
 middle_fontfamily: "Special Elite"
-middle_textcol: "#FFFFFF"
-middle:textalpha: 90
+middle_textcol: "#000000"
+middle:textalpha: 10
 middle_fontsize: "100px"
 main_findings:
-  - "Utilizing more varied survey data sources."
+  - "Utilizing varied survey data sources."
   - "Improving estimates for precision public health."
 logoleft_name: "Figures/wlogo.png"
-logocenter_name: "Figures/qr-code-black.png"
-logoright_name: "Figures/cssslogo.png"
+logocenter_name: "../qr_dr_harmonize.png"
+logoright_name: "../csde.PNG"
 #---POSTER BODY OPTIONS---#
-primary_colour: '#4b2e83'
-secondary_colour: '#8968ca'
+primary_colour: '#000000'
+secondary_colour: '#000000'
 accent_colour: "#b7a57a"
 body_bgcol: "#ffffff"
 body_textsize: "35px"
@@ -72,31 +72,30 @@ knitr::opts_chunk$set(
 ```{r}
 library(ggplot2)
 
-samplePlots <- readRDS(
-    "~/Documents/PointPolygon/demo/plotsForPresent.Rds")
+samplePlots <- readRDS("../plotsForPresent.Rds")
 
-resultsPlotsDR <- readRDS(
-    "~/Documents/PointPolygon/demo/aggplotsDR.Rds")
+resultsPlotsDR <- readRDS("../aggplotsDR.Rds")
 
-resultsPlots <- readRDS(
-    "~/Documents/PointPolygon/demo/aggplots.Rds")
+resultsPlots <- readRDS("../aggplots.Rds")
+
+finalPlots <- readRDS("../resultsData.RDS")
 ```
 
 # Introduction
 
-A new focus on reducing inequalities in global health outcomes has required that geographic data be used to understand the spatial risk of detrimental health outcomes and to identify who lies at the margins for greatest risk. While some data sources provide geographic coordinates for each observation, many sources provide data that are representative of administrative units only. How to harmonize these data sources has been widely contested, but to date, no agreed solution has overcome issues when data are presented in the combined form of point alongside polygon data. Furthermore, tests comparing validity of methods are nearly non-existent. 
+A new focus on reducing inequalities in global health outcomes has required that geographic data be used to understand the spatial risk of detrimental health outcomes and to identify who lies at the margins for greatest risk. While some data sources provide geographic coordinates for each observation, many sources provide data that are representative of administrative units only. How to harmonize these data sources has been widely contested, but to date, no agreed solution has overcome issues when data are presented in the combined form of point alongside point masked data. Furthermore, tests comparing validity of methods are nearly non-existent. 
 
 ## Objectives
 
-1. Introduce a novel method for using admin data for spatial models. 
-2. Compare against previous models.
-3. Compare in policy relevant scenarios.
+1. Introduce a novel method for using point masked data for spatial models. 
+2. Compare to previous models  
+3. Assess estimates to trusted sources  
 
 # Data  
 
 - World Population Ratsers Data
 - 2014 Multiple Indicator Cluster Survey DR
-- 2013 Demographic and Health Survey DR
+- 2007/13 Demographic and Health Survey DR
 - Administrative Boundary Data DR
 
 # Methods
@@ -104,6 +103,8 @@ A new focus on reducing inequalities in global health outcomes has required that
 $$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\ \vdots \\ \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\ \end{cases} \text{for } j \in \mathcal{A}_i \\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1}) \\ \kappa \sim \text{Log Normal}(0, 10) \\ \tau \sim \text{Log Normal}(0, 10) \\ \rho \sim \text{Logit Normal}(0, 10)$$
 
 ## Simulation Scenarios
+
+<img src="../diagram.png" width="95%"/>
 
 <img src="../UFUqUPT.png" width="95%"/>
 
@@ -115,8 +116,6 @@ samplePlots$fieldDR +
 <br>
 <br>
 <br>
-<br>
-<br>
 
 # Results
 
@@ -125,11 +124,16 @@ resultsPlots$rmseRelativePaper
 ```
 
 ```{r out.width='95%', fig.align='center'}
-resultsPlotsDR$dissDiffPaper
+finalPlots$provmap +
+  ggtitle("Mixture Model U5MR Estimates") +
+    theme(
+        legend.text = element_text(size=13),
+        legend.title = element_text(size=15),
+        title =  element_text(size=20))
 ```
 
 ```{r out.width='95%', fig.align='center'}
-samplePlots$drProvErrorPaper
+finalPlots$compareIHME5q0
 ```
 
 
@@ -139,3 +143,4 @@ samplePlots$drProvErrorPaper
 2. Model selection has significant impact on interpretation of results
 3. Improvment in RMSE of up to 30% in Dominican Republic simulation 
 4. Reduction of standard errors compared to ignoring data (35% at province)
+5. Model selection has important implications for mortality trends

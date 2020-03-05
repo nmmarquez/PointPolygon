@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.height
 
 ```{r include=FALSE}
 library(ggplot2)
+library(tidyverse)
 samplePlots <- readRDS(
     "~/Documents/PointPolygon/demo/plotsForPresent.Rds")
 
@@ -26,6 +27,9 @@ resultsPlotsDR <- readRDS(
 
 resultsPlots <- readRDS(
     "~/Documents/PointPolygon/demo/aggplots.Rds")
+
+resultsPlots3 <- readRDS(
+    "~/Documents/PointPolygon/demo/resultsData.RDS")
 ```
 
 
@@ -65,12 +69,11 @@ class: center, middle
 <img src=https://ars.els-cdn.com/content/image/1-s2.0-S014067360669569X-gr1_lrg.jpg>
 
 ---
-# Limitations of the National Context: Inequality
+# Limitations of the National Context and Inequality
 
 - Country level studies mask variation within the country (Hosseinpoor 2016)
     - Need for unmasking geographic differences in health
     - Deploy equity oriented interventions
-- Precision public health (Desmond-Hellmann 2016)
 - Recent studies point to growing levels of health inequalities by sub-national measures
     - Rising inequality in United States county level mortality (Dwyer-Lindgren 2017)
     - Differential gains in Sub-Saharan Africa under five mortality (Burke 2016)
@@ -81,43 +84,26 @@ class: center, middle
 <img src=https://cdn.jamanetwork.com/ama/content_public/journal/intemed/936342/ioi170020f3.png?Expires=2147483647&Signature=u2NlWKnJTY116YMspD2RpB15V~DYlNHNhsW2cmLy3ieE9rYp2p3BpyTvDwWC8LwKXWDVLD69i~S579f6IF~l83E6gycRsttYxG7jXIWJfHS2Fsln4y29K4~cGtvo0DkmGjVfzU1vU-Q~aa7kJjzQBBk9l5rzmJStBa~XIFwG3jIQlxbFuoFzsK9jmjqx8iKURSYYGE9whcuz200KCzSLA7S6uL195ZvsswkYRw5en2eBNeONaQcRsuZ0hYYsIsJaPtxQFlunxwiJXj5~fHuh~TSFPbOPNVTU8SCv7jFYYpapM5SSaTeYKoer1c3ZwnMIn5tyyhVcmGrfBk5XoaET4A__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA >
 
 ---
-# Spatial Analysis of Under 5 Mortality
+# Precision Public Health
 
-- Leverage spatial auto-correlation in health events to get better informed estimates
-- Classic example Clayton and Kaldor 1987 Socttish Lip Cancer
+"These limitations notwithstanding, the general findings that changes in under-5 mortality and clustering frequently transcended boundaries and were more responsive to local factors than to national factors are important and borne out by other evidence." (Bhutta 2016)
 
----
-# Example of Spatial Smoothing
-<img src="lipCancer.png">
-
+"By more accurately detecting, identifying, and tracking unique traits in subpopulations, subgroups, or even communities, we can respond with greater precision" (Desmond-Hellmann 2016)
 
 ---
-# Spatial Analysis of Under 5 Mortality
+# Goals: Spatial Analysis of Under 5 Mortality
 
-- Leverage spatial auto-correlation in health events to get better informed estimates
-- Classic example Clayton and Kaldor 1987 Socttish Lip Cancer
-    - Pooling information across space improves estimates
-    - Different observations give us different levels of information
-    - Similar things tend to cluster in space
+- Estimate Under 5 mortality at spatially granular levels  
+- Estimate time series of mortality trends to provide context
+- Estimate age specific patterns for potential intervention practices 
 
 ---
-# Spatial Mechenisms of Health Outcomes
-- Access to health facilities
-- Neighborhood characteristics and early life adversity
-- Clustered socio-economic characteristics
-    - Quality of education
-    - Economic standing
-    - [Racial/ethnic clustering](https://demographics.virginia.edu/DotMap/index.html)
-
----
-# Limitations to Current Analysis of Geospatial Child Mortality
-- Data must be sufficiently geolocated
-    - Known enumeration areas from MICS/DHS
-    - Geolocated data points
-- Data must come in the form of complete birth histories
-    - Summary birth histories
-    - Vital Registration may also be used if comprehensive
-- Data must be representative of the locations they sample
+# Difficulties in Small Area Estimation 
+- How to appropriately model small area estimates of mortality is not well agreed upon  
+- Complete linked vital registration systems are most often not available  
+    - This is especially true for the global south  
+- Aprropriate survey data, geotagged data, is not always available  
+- __Whether to ignore or harmonize sub-par data, data that is not geotagged, in the modeling process__  
 
 ---
 # DHS and MICS Studies
@@ -126,8 +112,8 @@ class: center, middle
     - Countries that do not have comprehensive registration systems
 - Collect data on a number of health indicators including CBH of women in households
 - Relatively small portion of the data is geolocated
-    - 25% of person years observed are geolocated
-    - 75% are representative of some national/subnational level
+    - 40% of person years observed are geolocated
+    - 60% are representative of some national/subnational level
     - Data is still collected in similar survey scheme
 
 ---
@@ -137,10 +123,12 @@ class: center, middle
 - Compare against ignoring the data completely
 - Compare against previously stated methods
 - Comparison framework
-    - Simulate spatio-temporal field of underlying probabilities
-    - Sample from the field at random
-    - Obscure locations for some samples representative of a particular area
-    - Validate on error and coverage metrics
+    - Simulate spatio-temporal field of underlying probabilities  
+    - Sample from the field at random  
+    - Obscure locations for some samples representative of a particular area  
+    - Validate on error and coverage metrics  
+    - Holdout framework for validating model
+- Situate model results against other estimates of under-5 mortality
 
 ---
 class: center, middle
@@ -174,17 +162,11 @@ samplePlots$popDR
 ```
 
 ---
-# An Example Case: Dominican Republic
+# DHS and MICS Studies
 
 ```{r}
-samplePlots$reg
-```
-
----
-# An Example Case: Dominican Republic
-
-```{r}
-samplePlots$regSamples
+samplePlots$samplesMap +
+  theme(legend.position = c(0.6, 0.08))
 ```
 
 ---
@@ -194,16 +176,37 @@ samplePlots$regSamples
 
 $$Y_i \sim \text{Binomial}(p_{s_i, t_i}, N_i) \\ \text{logit}(p_{s_i, t_i}) = \boldsymbol{\beta \cdot X_{s_i, t_i}} + \omega(s_i, t_i) \\ \boldsymbol{\omega} \sim \mathcal{GP}(\boldsymbol{0}, \mathcal{M} \otimes\text{AR1}) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1}) \\ \kappa \sim \text{Log Normal}(0, 10) \\ \tau \sim \text{Log Normal}(0, 10) \\ \rho \sim \text{Logit Normal}(0, 10)$$
 ---
-# New Proposal: Mixture Model
+# Traditional Spatial Modeling Approach: SPDE
 
 ```{r}
-samplePlots$popWDR
+samplePlots$meshexample
+```
+
+---
+# Traditional Spatial Modeling Approach: SPDE
+
+```{r}
+samplePlots$projectexample
+```
+
+---
+# Traditional Spatial Modeling Approach: SPDE
+
+```{r}
+samplePlots$provAggExample
 ```
 
 ---
 # New Proposal: Mixture Model
 
 $$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \times q_{s_{j_1}}\\ \vdots \\ \text{Binomial}(p_{s_{j_J}, t_i}, N_i) \times q_{s_{j_J}} \\ \end{cases} \text{for } j \in \mathcal{A}_i \\ \text{logit}(p_{s_j, t_i}) = \boldsymbol{\beta \cdot X_{s_j, t_i}} + \omega(s_j, t_i) \\ \boldsymbol{\omega}~\dot \sim~ \text{GMRF}(\boldsymbol{0}, Q^\mathcal{M} \otimes Q^\text{AR1}) \\ \kappa \sim \text{Log Normal}(0, 10) \\ \tau \sim \text{Log Normal}(0, 10) \\ \rho \sim \text{Logit Normal}(0, 10)$$
+
+---
+# New Proposal: Mixture Model
+
+```{r}
+samplePlots$mixexample
+```
 
 ---
 
@@ -248,7 +251,7 @@ $$Y^\star_i ~\dot \sim ~ \begin{cases} \text{Binomial}(p_{s_{j_1}, t_i}, N_i) \t
 
 # Model Comparison Framework: Simulated Field Variation
 
-<img src=./36kXIWk.png style="height: 450px" />
+<img src=./diagram.png style="height: 450px" />
 
 ---
 
@@ -268,9 +271,9 @@ samplePlots$ovPlot
 
 # Model Comparison Framework: Candidate Models
  - Mixture Model  
- - Utazi Model  
- - Resampling Model
- - Ignore Polygon Model
+ - Ecological (Utazi) Model  
+ - Resampling (Golding/IHME) Model
+ - Ignore Polygon data Model
  - Location Known Model (for Reference)
 
 ---
@@ -334,7 +337,6 @@ resultsPlots$dissDiffPaper
 - Simulate cluster locations for MICS within known stratification (Region/urbanicity)
 - DHS: 370 clusters with 3256 person-years of data
 - Mics:  684 clusters of data with ~25,000 person years of data
-- No Utazi model
 
 ---
 
@@ -415,6 +417,79 @@ resultsPlotsDR$dissDiffPaper
 
 ---
 
+class: center, middle
+
+# Data Application
+
+---
+
+# Child Mortality Conext
+
+- We want to model not only the time and space process but they age process as well  
+- Need to expand on the model to account for differences
+- Model 1: Multiple survey soures to account for 
+- Model 2: Possible space indpendent (national level) age specific temporal effects  
+- Model 3: Account for the possibility of excess variance  
+- Test each model using one of three masked data incorporation techniques  
+    - Ignore  
+    - Mixture  
+    - Resmaple
+- Evaluate each model by holding out one year of data and calculating likelihood of hold out from model.
+
+---
+# Child Mortality Context
+
+$$
+\begin{eqnarray}
+Y_a(\boldsymbol{s}_i, t) &\sim& \text{Binomial}\left[ ~N_a(\boldsymbol{s}_i , t), p_a(\boldsymbol{s}_i , t)~ \right] \nonumber \\
+\text{logit}\left[~ p_a(\boldsymbol{s}_i, t)~\right] &=&
+\underbrace{\underbrace{\underbrace{
+ \beta_a + 
+\gamma I( \boldsymbol{s}_i \in \mbox{ urban })+
+\epsilon_v + u(\boldsymbol{s}_i, t)
+}_{\text{Model 1}} + \phi_{a, t}
+}_{\text{Model 2}} + \eta_c
+}_{\text{Model 3}}
+\end{eqnarray}
+$$
+
+---
+
+# Results of Data Holdouts  
+
+```{r}
+resultsPlots3$bestmodel %>%
+  ungroup() %>%
+  mutate(`OOS NLL` = c(300.6, 300.9, 300.9, 300.9, 300.8, 300.7, 300.9)) %>%
+  rename(Method = method, Model = pars, `Top Performance` = N) %>%
+  knitr::kable('html')
+```
+
+---
+
+# Comparison to External Sources  
+
+```{r}
+resultsPlots3$compareIHME5q0
+```
+
+---
+
+# Comparison to External Sources  
+
+```{r}
+resultsPlots3$compare5q0
+```
+
+---
+
+# Comparison to External Sources  
+
+```{r}
+resultsPlots3$provmap
+```
+
+---
 # Notes on Runtime
 ```{r}
 resultsPlotsDR$runtime
@@ -426,6 +501,7 @@ resultsPlotsDR$runtime
 - New model provides significant improvement over IHME resampling
 - Most tested models offer some improvement over resampling
 - Reduction of standard errors compared to ignoring data (35% at province)
+- More accurate than previous approaches both in simulation and OOS contexts  
 - Cost of implementation for mixture model is high (runtime & RAM)  
 - Riemann model offers a compromise in performance and resources  
 
@@ -433,7 +509,6 @@ resultsPlotsDR$runtime
 
 # Limitations
 - No model miss-specification tests  
-- Unclear how different results are when applied to actual data
 - Should test other countries  
 - Need to vary temporal auto correlation  
 

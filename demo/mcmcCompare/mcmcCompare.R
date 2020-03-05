@@ -77,7 +77,7 @@ if(!file.exists(save_file)){
     
     modelMCMC <- runFieldModel(
         unitSim,
-        pointDF=mixDFList$`10`$pointDF,
+        pointDF=mixDFList$`10`$pointDF,4 9m5h
         polyDF=mixDFList$`10`$polyDF,
         verbose=T,
         mcmc = TRUE,
@@ -187,5 +187,40 @@ names(mcFit) <- paste0("MCMC ", 1:4)
 
 ggFieldEst(results$field, c(list(TMB=laFit), mcFit)) + 
     facet_wrap(~Type)
-ggFieldEst(results$field, c(list(TMB=laFit), mcFit), sd=TRUE) + 
-    facet_wrap(~Type)
+
+ciCompare <- ggFieldEst(results$field, c(list(TMB=laFit), mcFit), sd=TRUE) + 
+    facet_wrap(~Type) +
+    labs(fill = "Confidence/\nCredible\nInterval", x = "", y = "") +
+    theme(
+        legend.text = element_text(size=13),
+        legend.title = element_text(size=15),
+        axis.text = element_text(size=13),
+        axis.title = element_text(size=17),
+        title =  element_text(size=20),
+        strip.text.x = element_text(size = 17))
+    
+
+resCompare <- mcFit$`MCMC 1` %>%
+    rename_all(function(x) paste0("MCMC", x)) %>%
+    rename(id = MCMCid) %>%
+    left_join(laFit) %>%
+    ggplot(aes(x=mu, y=MCMCmu, ymin = MCMClwr, ymax = MCMCupr)) +
+    geom_point(alpha=.3) +
+    geom_errorbar(alpha=.1, size=.2) +
+    theme_classic() +
+    labs(x="Laplace Approximation", y="MCMC") +
+    ggtitle("") +
+    theme(
+        legend.text = element_text(size=13),
+        legend.title = element_text(size=15),
+        axis.text = element_text(size=13),
+        axis.title = element_text(size=17),
+        title =  element_text(size=20))
+
+ggsave(
+    "demo/figures/MCMCvINLAsd.png", ciCompare,
+    width=400, height=280, units = "mm")
+
+ggsave(
+    "demo/figures/MCMCvINLA.png", resCompare,
+    width=400, height=280, units = "mm")

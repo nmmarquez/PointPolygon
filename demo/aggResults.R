@@ -234,7 +234,7 @@ ggsave(
         select(covType:rmse, sampling, polysize) %>%
         rename(rmseUtazi=rmse) %>%
         right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
-        filter(converge == 0 & model !="Riemann" & model != "Utazi") %>%
+        filter(converge == 0) %>%  #& model !="Riemann" & model != "Utazi") %>%
         mutate(improveRatio=(rmseUtazi-rmse)/rmseUtazi) %>%
         group_by(model) %>%
         summarize(
@@ -257,7 +257,7 @@ ggsave(
         geom_text(nudge_y = .22))
 
 (aggPlots$rmseRelativeZoom <- resultsDF %>%
-    filter(model=="Utazi") %>%
+    filter(model=="Ecological") %>%
     select(covType:rmse, sampling, polysize) %>%
     rename(rmseUtazi=rmse) %>%
     right_join(select(resultsDF, covType:rmse, model, sampling, converge, polysize)) %>%
