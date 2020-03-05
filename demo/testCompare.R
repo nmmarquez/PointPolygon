@@ -15,8 +15,8 @@ field <- simField(
     rho = .85)
 
 ggField(field)
-
 #mixSample <- samplePPMix(field, 100, 100, p=.5, rWidth=5)
+
 
 mixSample <- list(
     polyDF  = samplePolygons(field, 150, 50, p=1., rWidth=5),

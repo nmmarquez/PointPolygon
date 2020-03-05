@@ -153,6 +153,14 @@ convergeList <- lapply(unitModelList, function(model){
     })
 })
 
+timeList <- lapply(unitModelList, function(model){
+    lapply(model, function(sampleType){
+        lapply(sampleType, function(ffit){
+            as.numeric(ffit$runtime, units="mins")
+        })
+    })
+})
+
 unitResults <- list(
     sim = unitSim,
     pred = unitFitList,
@@ -163,7 +171,8 @@ unitResults <- list(
     rangeE = rangeE,
     covVal = covVal,
     M = M,
-    seed = seed
+    seed = seed,
+    runtime = timeList
 )
 
-saveRDS(unitResults, file=paste0("~/Data/utaziTest2/", modelname))
+saveRDS(unitResults, file=paste0("~/Data/utaziTest3/", modelname))

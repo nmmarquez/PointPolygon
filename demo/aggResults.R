@@ -1,5 +1,6 @@
 .libPaths(c("~/R3.5/", .libPaths()))
 rm(list=ls())
+library(GGally)
 library(tibble)
 library(dplyr)
 library(parallel)
@@ -404,5 +405,30 @@ ggsave(
 ggsave(
     "demo/figures/dissSim1.png", aggPlots$dissDiffPaper,
     width=400, height=280, units = "mm")
+
+pm <- resultsDF %>%
+    group_by(covType, covVal, rangeE, M, seed, sampling, polysize) %>%
+    mutate(groupC=all(converge == 0)) %>%
+    filter(groupC) %>%
+    ungroup %>%
+    select(covType, covVal, rangeE, M, seed, sampling, polysize, 
+           model, runtime) %>%
+    spread("model", "runtime") %>%
+    mutate(model=1:n()) %>%
+    select(Ignore:Utazi) %>%
+    ggpairs(aes(alpha=.1), lower=list(continuous="density")) +
+    theme_classic()
+
+pm2 <- pm
+for(i in 2:pm$nrow) {
+    for(j in 1:(i-1)) {
+        pm2[i,j] <- pm[i,j] +
+            scale_x_continuous(limits = c(0, 10)) +
+            scale_y_continuous(limits = c(0, 10)) +
+            geom_abline(color="red", linetype=2)
+    }
+}
+
+pm2
 
 write_rds(aggPlots, "~/Documents/PointPolygon/demo/aggplots.Rds")
