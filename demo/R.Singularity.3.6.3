@@ -63,6 +63,7 @@ From: ubuntu:18.04
   R --slave -e 'install.packages("rgeos")'
   R --slave -e 'install.packages("ar.matrix")'
   R --slave -e 'install.packages("devtools")'
+  R --slave -e 'install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)'
   R --slave -e 'devtools::install_github("nmmarquez/PointPolygon")'
 
   # Clean up
