@@ -14,14 +14,22 @@ From: ubuntu:18.04
 %runscript
   exec R "${@}"
 
+%environment
+  R_LIBS_USER="/library"
+  export R_LIBS_USER
+
 %post
+  # BUILD CODE 
+  # sudo singularity build singularity-r.simg R.Singularity.3.6.3
+  # RUN CODE EXAMPLE
+  # 
   # Software versions
   export R_VERSION=3.6.3
 
   # Get dependencies
   apt-get update
   apt-get install -y --no-install-recommends \
-    locales gnupg tzdata
+    locales gnupg git less libstdc++6
 
   # Configure default locale
   echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
@@ -29,6 +37,14 @@ From: ubuntu:18.04
   /usr/sbin/update-locale LANG=en_US.UTF-8
   export LC_ALL=en_US.UTF-8
   export LANG=en_US.UTF-8
+
+  # SET NOninteractive installation
+  export DEBIAN_FRONTEND=noninteractive
+  #install tzdata package
+  apt-get install -y tzdata
+  # set your timezone
+  ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
+  dpkg-reconfigure --frontend noninteractive tzdata
 
   # Install R
   echo "deb http://cran.r-project.org/bin/linux/ubuntu bionic-cran35/" > /etc/apt/sources.list.d/r.list
@@ -46,7 +62,8 @@ From: ubuntu:18.04
     libxml2-dev \
     libcairo2-dev \
     libxt-dev \
-    libudunits2-dev
+    libudunits2-dev \
+    libftgl2 libcgal-dev libglu1-mesa-dev libglu1-mesa-dev libx11-dev libfreetype6-dev
   apt-get install -y --no-install-recommends binutils libgdal-dev gdal-bin libproj-dev proj-data proj-bin libgeos-dev
 
   # Add a default CRAN mirror
@@ -56,15 +73,23 @@ From: ubuntu:18.04
   mkdir -p /library
   echo "R_LIBS_SITE=/library:\${R_LIBS_SITE}" >> /usr/lib/R/etc/Renviron.site
 
-  # install r libraries 
+  # install r libraries
+  R --slave -e 'install.packages("rgl")'
   R --slave -e 'install.packages("tidyverse")'
   R --slave -e 'install.packages("sf")'
   R --slave -e 'install.packages("sp")'
   R --slave -e 'install.packages("rgeos")'
   R --slave -e 'install.packages("ar.matrix")'
   R --slave -e 'install.packages("devtools")'
+  R --slave -e 'install.packages("TMB")'
+  R --slave -e 'install.packages("arm")'
+  R --slave -e 'install.packages("tmbstan")'
   R --slave -e 'install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)'
-  R --slave -e 'devtools::install_github("nmmarquez/PointPolygon")'
+  # This is definitely a hack but i can not get these damn sources to compile through R
+  git clone https://github.com/nmmarquez/PointPolygon.git
+  R --slave -e "TMB::compile('PointPolygon/src/PointPolygon.cpp','-O0 -g')"
+  R --slave -e "TMB::compile('PointPolygon/src/u5m.cpp','-O0 -g')"
+  R --slave -e 'install.packages("PointPolygon", repos=NULL, type="source")'
 
   # Clean up
   rm -rf /var/lib/apt/lists/*
