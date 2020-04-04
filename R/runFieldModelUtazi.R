@@ -64,13 +64,26 @@ runFieldModelUtazi <- function(
     }
     
     if(aggData){
-        polyDF_ <- polyDF %>% 
-            select(polyid, tidx, obs, trials, strat) %>%
-            group_by(polyid, tidx, strat) %>% 
-            summarize_all(sum) %>%
-            as.data.frame %>%
-            mutate(urban=(str_split(strat, "_", n=2, simplify=T)[,2])) %>%
-            mutate(urban=as.numeric(as.numeric(urban)==1))
+        # presence of strat indicates this is DR sim model
+        if(("strat" %in% names(polyDF))){
+            polyDF_ <- polyDF %>% 
+                select(polyid, tidx, obs, trials, strat) %>%
+                group_by(polyid, tidx, strat) %>% 
+                summarize_all(sum) %>%
+                as.data.frame %>%
+                mutate(urban=(str_split(strat, "_", n=2, simplify=T)[,2])) %>%
+                mutate(urban=as.numeric(as.numeric(urban)==1))
+        }
+        else{
+            polyDF_ <- polyDF %>% 
+                select(polyid, tidx, obs, trials) %>%
+                group_by(polyid, tidx) %>% 
+                summarize_all(sum) %>%
+                mutate(urban = TRUE) %>%
+                as.data.frame
+            
+            field$spdf$urban <- TRUE 
+        }
     }
     
     else{
