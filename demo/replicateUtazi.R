@@ -175,4 +175,4 @@ unitResults <- list(
     runtime = timeList
 )
 
-saveRDS(unitResults, file=paste0("~/Data/utaziTest3/", modelname))
+saveRDS(unitResults, file=paste0("/gscratch/csde/nmarquez/Data/utaziTest3/", modelname))

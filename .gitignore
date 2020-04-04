@@ -21,6 +21,7 @@ demo/secCenso
 *.rds
 *.zip
 *.pdf
+*.out
 demo/IHMEpresentation_files
 demo/generalPresentation_files
 demo/libs
