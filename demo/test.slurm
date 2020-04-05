@@ -33,17 +33,11 @@
 
 ## See above section on "Specifying memory" for choices for --mem.
 
-#SBATCH --mem=20G
+#SBATCH --mem=5G
 
 ## Specify the working directory for this job
 
 #SBATCH --chdir=/gscratch/csde/nmarquez/PointPolygon/demo
-
-##turn on e-mail notification
-
-#SBATCH --mail-type=ALL
-
-#SBATCH --mail-user=nmarquez@uw.edu
 
 ## export all your environment variables to the batch job session
 
