@@ -22,6 +22,7 @@ demo/secCenso
 *.zip
 *.pdf
 *.out
+*.slurm
 demo/IHMEpresentation_files
 demo/generalPresentation_files
 demo/libs
