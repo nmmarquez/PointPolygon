@@ -155,7 +155,7 @@ runFieldModelUtazi <- function(
             data=list(y=polyDF_$obs, n=polyDF_$trials),
             # A maps how you get from the effects estimated to Areal data observation
             # its a 1 for both non SPDE random effects and covariates.
-            A=list(areaA,1,1),
+            A=list(areaA[polyDF_$polyid+1,],1,1),
             effects=list(
                 s=1:ncol(areaA),
                 sa=polyDF_$polyid+1,
