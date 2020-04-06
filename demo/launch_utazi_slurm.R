@@ -14,7 +14,7 @@ paramDF <- expand.grid(
     M = as.integer(200),
     seed = 1:500)
 
-for(i in 1:nrow(parDF)){
+for(i in 1:nrow(paramDF)){
     fn <- modelname <- paste0(
         "demo/slurm_files/",
         "range=", paramDF$rangeE[i],
