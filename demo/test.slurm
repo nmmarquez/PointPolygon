@@ -19,11 +19,11 @@
 
 ## Number of cores per node
 
-#SBATCH --ntasks-per-node=28
+#SBATCH --ntasks-per-node=1
 
 ## Walltime (3 hours). Do not specify a walltime substantially more than your job needs.
 
-#SBATCH --time=5:00:00
+#SBATCH --time=8:00:00
 
 ## Memory per node. It is important to specify the memory since the default memory is very small.
 
@@ -33,7 +33,7 @@
 
 ## See above section on "Specifying memory" for choices for --mem.
 
-#SBATCH --mem=5G
+#SBATCH --mem=20G
 
 ## Specify the working directory for this job
 
