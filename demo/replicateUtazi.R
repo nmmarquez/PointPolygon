@@ -1,11 +1,11 @@
 .libPaths(c("~/R3.5/", .libPaths()))
-rm(list=ls())
+#rm(list=ls())
 library(rgeos)
 library(sp)
 library(PointPolygon)
 library(dplyr)
 
-args <- commandArgs(trailingOnly=TRUE)
+#args <- commandArgs(trailingOnly=TRUE)
 
 # for testing
 # rangeE <- .3

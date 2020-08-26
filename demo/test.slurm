@@ -23,7 +23,7 @@
 
 ## Walltime (3 hours). Do not specify a walltime substantially more than your job needs.
 
-#SBATCH --time=8:00:00
+#SBATCH --time=16:00:00
 
 ## Memory per node. It is important to specify the memory since the default memory is very small.
 
@@ -43,4 +43,4 @@
 
 #SBATCH --export=all
 
-module load singularity gcc_8.2.1-ompi_3.1.4 && singularity run --app Rscript singularity-r.simg ./replicateUtazi.R .5 .4 spatial 300 123
+module load singularity gcc_8.2.1-ompi_3.1.4 && singularity run --app Rscript singularity-r.simg ./replicate_utazi_slurm_hack.R .5 .4 spatial 300 $SLURM_ARRAY_TASK_ID
