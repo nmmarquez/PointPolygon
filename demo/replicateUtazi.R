@@ -5,7 +5,7 @@ library(sp)
 library(PointPolygon)
 library(dplyr)
 
-#args <- commandArgs(trailingOnly=TRUE)
+args <- commandArgs(trailingOnly=TRUE)
 
 # for testing
 # rangeE <- .3
