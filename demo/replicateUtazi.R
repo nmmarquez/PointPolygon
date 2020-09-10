@@ -107,7 +107,7 @@ models <- c(
     "Mixed Model" = 0,
     "Resample"    = 1,
     "Utazi"       = 2,
-    "Reimann"     = 3,
+     #  "Reimann"     = 3,
     "Ignore"      = 4,
     "Known"       = 5)
 
