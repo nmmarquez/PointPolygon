@@ -202,6 +202,7 @@ Type objective_function<Type>::operator() ()
     std::cout << "RW2 priors applied.\n";
 
     // Turn z into a matrix here so projLatF is space by time
+    
     matrix<Type> projLatF = AprojObs * z.matrix();
     std::cout << "Project space time.\n";
     // covs should be an array that we loop through time to have space by time

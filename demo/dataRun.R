@@ -170,6 +170,7 @@ if(!is.na(regHO)){
 modelRun <- function(
     pointDF, polyDF=NULL, moption = 0, priors = 0, nugget = TRUE, model = "u5m",
     time_structured = TRUE, time_unstructured = TRUE, survey_effect=FALSE,
+    space_only=FALSE,
     verbose=TRUE, symbolic=TRUE, control=list(eval.max=1e4, iter.max=1e4)){
     if(is.null(polyDF)){
         moption <- 0
@@ -223,6 +224,16 @@ modelRun <- function(
 
     Map <- NULL
     random <- c("z", "epsilon", "phi", "nu", "eta")
+    
+    if(space_only){
+        Map <- c(
+            Map,
+            list(
+                logit_rho = factor(NA)
+            )
+        )
+        Params$z <- array(0,dim=c(field$mesh$n))
+    }
 
     if(!nugget){
         Map <- c(
