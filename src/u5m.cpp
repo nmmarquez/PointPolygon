@@ -203,7 +203,21 @@ Type objective_function<Type>::operator() ()
 
     // Turn z into a matrix here so projLatF is space by time
     
-    matrix<Type> projLatF = AprojObs * z.matrix();
+    matrix<Type> z2;
+    
+    if(z.dim(1) > 1){
+        z2 = z.matrix();
+    }
+    else{
+        matrix<Type> onesMat(1,epsilon.size());
+        for(int i=1; i < epsilon.size(); i++){
+            onesMat(0,i) = Type(1.0);
+        }
+
+        z2 = z.matrix() * onesMat;
+    }
+    
+    matrix<Type> projLatF = AprojObs * z2;
     std::cout << "Project space time.\n";
     // covs should be an array that we loop through time to have space by time
     matrix<Type> projCov(projLatF.rows(), projLatF.cols());

@@ -39,9 +39,16 @@ simulateDataFieldCI <- function(modelFit, field, draws=1000, agg5q0=FALSE){
   zDraws <- parDraws[zRows, ]
   phiDraws <- parDraws[phiRows, ]
   nNod <- field$mesh$n
-  projDraws <- t(do.call(rbind, lapply(1:field$nTimes, function(i){
-    as.matrix(field$AprojField %*% zDraws[((i - 1) * nNod + 1):(i * nNod), ])
-  })))
+  if(nNod*field$nTimes != nrow(zDraws)){
+      projDraws <- t(do.call(rbind, lapply(1:field$nTimes, function(i){
+          as.matrix(field$AprojField %*% zDraws)
+      })))
+  }
+  else{
+      projDraws <- t(do.call(rbind, lapply(1:field$nTimes, function(i){
+          as.matrix(field$AprojField %*% zDraws[((i - 1) * nNod + 1):(i * nNod), ])
+      })))
+  }
 
   predDraws <- 1
   
